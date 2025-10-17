@@ -42,9 +42,7 @@
 #' The MCC is a robust metric for binary classification, especially on imbalanced data.
 #' It ranges from -1 (perfect negative correlation) to +1 (perfect positive correlation).
 #' For 2x2 confusion matrices:
-#' \[
-#' \text{MCC} = \frac{TP \cdot TN - FP \cdot FN}{\sqrt{(TP + FP)(TP + FN)(TN + FP)(TN + FN)}}
-#' \]
+#' \deqn{MCC = \frac{TP\,TN - FP\,FN}{\sqrt{(TP + FP)(TP + FN)(TN + FP)(TN + FN)}}}{MCC = (TP*TN - FP*FN)/sqrt((TP+FP)(TP+FN)(TN+FP)(TN+FN))}
 #' where:
 #' - TP: True Positives
 #' - TN: True Negatives
@@ -52,9 +50,7 @@
 #' - FN: False Negatives
 #'
 #' and
-#' \[
-#' |\text{MCC}| = \sqrt{\frac{\chi^2}{n}}
-#' \]
+#' \deqn{|MCC| = \sqrt{\frac{\chi^2}{n}}}{|MCC| = sqrt(chi^2 / n)}
 #'
 #' The **chi-square test** is fast but assumes that each observation is independent,
 #' which is often not true for time series data.

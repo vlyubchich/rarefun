@@ -1,0 +1,280 @@
+---
+title: "Getting Started with rarefun"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with rarefun}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## Introduction
+
+The **rarefun** package provides a collection of functions for detecting and analyzing rare events in datasets. This vignette demonstrates the main functionalities of the package.
+
+## Installation
+
+You can install the development version of rarefun from GitHub:
+
+```{r install}
+# install.packages("devtools")
+devtools::install_github("vlyubchich/rarefun")
+```
+
+```{r setup}
+library(rarefun)
+```
+
+## Anomaly Detection Methods
+
+### Isolation Forest
+
+The Isolation Forest algorithm is effective for detecting anomalies in high-dimensional data. It works by randomly partitioning the data space and identifying points that are isolated quickly.
+
+```{r iforest-example}
+# Create sample data with outliers
+set.seed(123)
+data <- matrix(rnorm(1000), nrow = 500, ncol = 2)
+data[1:5, ] <- data[1:5, ] + 10  # Add outliers
+
+# Detect anomalies using Isolation Forest
+result <- rare_iforest(data, ntrees = 100, threshold = 0.7)
+
+# View results
+table(result$is_anomaly)
+
+# Visualize
+plot(data, 
+     col = ifelse(result$is_anomaly, "red", "blue"), 
+     pch = 19,
+     main = "Isolation Forest Anomaly Detection",
+     xlab = "Feature 1",
+     ylab = "Feature 2")
+legend("topright", 
+       legend = c("Normal", "Anomaly"), 
+       col = c("blue", "red"), 
+       pch = 19)
+```
+
+You can also use it with real datasets like the iris dataset:
+
+```{r iforest-iris}
+# Detect anomalies in iris dataset
+result_iris <- rare_iforest(iris[, 1:4], threshold = 0.5)
+table(result_iris$is_anomaly)
+```
+
+### DBSCAN Clustering
+
+DBSCAN (Density-Based Spatial Clustering of Applications with Noise) identifies anomalies as points that don't belong to any dense cluster.
+
+```{r dbscan-example}
+# Create sample data
+set.seed(456)
+data <- matrix(rnorm(1000), nrow = 500, ncol = 2)
+data[1:5, ] <- data[1:5, ] + 8  # Add outliers
+
+# Detect anomalies using DBSCAN
+result <- rare_dbscan(data, minPts = 5)
+
+# View results
+table(result$is_anomaly)
+table(result$cluster)
+
+# Visualize
+plot(data, 
+     col = result$cluster + 1, 
+     pch = ifelse(result$is_anomaly, 17, 19),
+     main = "DBSCAN Anomaly Detection",
+     xlab = "Feature 1",
+     ylab = "Feature 2")
+legend("topright", 
+       legend = c("Cluster", "Anomaly"), 
+       pch = c(19, 17))
+```
+
+### Residual-based Anomaly Detection
+
+The `rare_residuals()` function detects anomalies based on model residuals.
+
+```{r residuals-example}
+# Example with linear model residuals
+x <- 1:100
+y <- 2 * x + rnorm(100, 0, 5)
+y[c(10, 50, 90)] <- y[c(10, 50, 90)] + 50  # Add outliers
+
+# Fit model and detect anomalies
+model <- lm(y ~ x)
+result <- rare_residuals(model, threshold = 2.5)
+
+# Visualize
+plot(x, y, 
+     col = ifelse(result$is_anomaly, "red", "blue"),
+     pch = 19,
+     main = "Residual-based Anomaly Detection")
+abline(model, col = "green", lwd = 2)
+```
+
+## Statistical Methods
+
+### Matthews Correlation Coefficient
+
+The `mcc()` function calculates the Matthews Correlation Coefficient, a measure of classification quality:
+
+```{r mcc-example}
+# Example confusion matrix
+predicted <- c(rep(1, 50), rep(0, 50))
+actual <- c(rep(1, 45), rep(0, 5), rep(1, 10), rep(0, 40))
+
+# Calculate MCC
+mcc_value <- mcc(predicted, actual)
+print(paste("MCC:", round(mcc_value, 3)))
+```
+
+### Contingency Table Chi-square Test
+
+The `contingency_chisq()` function performs chi-square tests on contingency tables:
+
+```{r chisq-example}
+# Create contingency table
+observed <- matrix(c(20, 30, 25, 25), nrow = 2)
+
+# Perform test
+result <- contingency_chisq(observed)
+print(result)
+```
+
+### Kneedle Algorithm
+
+The `kneedle()` function detects knee points in curves, useful for determining optimal thresholds:
+
+```{r kneedle-example}
+# Create curve with knee point
+x <- 1:100
+y <- 100 / (1 + exp(-(x - 50) / 10))
+
+# Find knee point
+knee <- kneedle(x, y)
+print(paste("Knee point at x =", knee))
+
+# Visualize
+plot(x, y, type = "l", lwd = 2,
+     main = "Knee Point Detection")
+abline(v = knee, col = "red", lty = 2, lwd = 2)
+```
+
+## Spatial Analysis
+
+### Spatial Point Matching
+
+The `match_spatial_points()` function matches spatial points between datasets:
+
+```{r spatial-example}
+# Create two sets of spatial points
+set.seed(789)
+points1 <- data.frame(
+  lon = runif(50, -80, -70),
+  lat = runif(50, 35, 45)
+)
+
+points2 <- data.frame(
+  lon = runif(30, -80, -70),
+  lat = runif(30, 35, 45)
+)
+
+# Match points within distance threshold
+matches <- match_spatial_points(points1, points2, max_dist = 0.5)
+head(matches)
+```
+
+## Time Series Analysis
+
+### Time Series Extraction
+
+The `extract_ts()` function extracts time series from larger datasets:
+
+```{r ts-example}
+# Example with time series data
+dates <- seq(as.Date("2020-01-01"), as.Date("2023-12-31"), by = "day")
+values <- cumsum(rnorm(length(dates)))
+
+data <- data.frame(date = dates, value = values)
+
+# Extract specific time period
+ts_subset <- extract_ts(data, 
+                        start_date = "2022-01-01", 
+                        end_date = "2022-12-31")
+head(ts_subset)
+```
+
+## Advanced Features
+
+### Goodness-of-fit for Quantile Regression
+
+The `gof_qr()` function tests goodness-of-fit for quantile regression models:
+
+```{r gof-example}
+# Fit quantile regression (requires quantreg package)
+# library(quantreg)
+# data(engel)
+# fit <- rq(foodexp ~ income, data = engel, tau = 0.5)
+# 
+# # Test goodness-of-fit
+# gof_result <- gof_qr(fit)
+# print(gof_result)
+```
+
+### Partial Quantile Random Forest
+
+The `partial_qrf()` function performs partial dependence analysis for quantile random forests:
+
+```{r pqrf-example}
+# Example with random forest (requires quantregForest package)
+# library(quantregForest)
+# set.seed(101)
+# x <- matrix(rnorm(500), ncol = 5)
+# y <- x[,1] + 0.5 * x[,2]^2 + rnorm(100)
+# 
+# # Fit model and compute partial dependence
+# qrf_model <- quantregForest(x, y)
+# partial <- partial_qrf(qrf_model, x, variable = 1)
+```
+
+## Best Practices
+
+1. **Data Preprocessing**: Always check for missing values and scale your data appropriately before applying anomaly detection methods.
+
+2. **Parameter Tuning**: The effectiveness of anomaly detection methods depends on parameter choices. Consider cross-validation or domain knowledge to set parameters like `threshold`, `minPts`, or `ntrees`.
+
+3. **Validation**: Always validate detected anomalies with domain expertise or additional data.
+
+4. **Multiple Methods**: Consider using multiple detection methods and combining their results for more robust anomaly detection.
+
+## Further Reading
+
+For more details on specific functions, see their help pages:
+
+```{r help}
+?rare_iforest
+?rare_dbscan
+?rare_residuals
+?match_spatial_points
+?extract_ts
+?contingency_chisq
+?mcc
+?kneedle
+?gof_qr
+?partial_qrf
+```
+
+## References
+
+- Liu, F. T., Ting, K. M., & Zhou, Z. H. (2008). Isolation forest. IEEE International Conference on Data Mining.
+- Ester, M., Kriegel, H. P., Sander, J., & Xu, X. (1996). A density-based algorithm for discovering clusters in large spatial databases with noise. KDD.

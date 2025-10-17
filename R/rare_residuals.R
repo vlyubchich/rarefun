@@ -110,7 +110,7 @@
 #'   theme_light() + theme(legend.title = element_blank())
 #'
 #' }
-#' @importFrom stats loess predict spec.pgram lm ccf stl ts
+#' @importFrom stats loess na.omit predict spec.pgram lm ccf stl ts
 #' @importFrom lubridate year yday
 #' @export
 #'

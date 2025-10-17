@@ -14,8 +14,6 @@
 #'   region (default: 5).
 #' @param scale Logical, whether to scale the data to have mean 0 and standard
 #'   deviation 1 before clustering (default: TRUE).
-#' @param columns Optional character vector, names of columns in `x` to use for
-#'   clustering (default: NULL, uses all numeric columns).
 #' @param ... Additional arguments passed to `dbscan::dbscan`.
 #' @return A list containing:
 #'   \itemize{

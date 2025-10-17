@@ -1,0 +1,42 @@
+Package: rarefun
+Type: Package
+Title: Functions for Rare Events Analysis
+Version: 0.1.0
+Authors@R: c(
+    person("Vyacheslav", "Lyubchich", 
+           email = "lyubchich@umces.edu",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-7936-4285")),
+    person("Geneviève", "Nesslage", 
+           role = "aut",
+           comment = c(ORCID = "0000-0003-1770-6803"))
+    )
+Description: A collection of functions for detecting and analyzing rare events
+    in datasets. Includes implementations of various anomaly detection methods
+    such as isolation forest, DBSCAN clustering, and residual-based approaches.
+    Provides tools for spatial point matching, time series extraction, and
+    statistical testing for rare event patterns.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends:
+    R (>= 3.5.0)
+Imports:
+    RANN,
+    boot,
+    dbscan,
+    geosphere,
+    isotree,
+    lubridate,
+    parallel,
+    pdp,
+    quantmod,
+    stats
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    dplyr
+RoxygenNote: 7.3.3
+URL: https://github.com/vlyubchich/rarefun
+BugReports: https://github.com/vlyubchich/rarefun/issues
+VignetteBuilder: knitr, rmarkdown
