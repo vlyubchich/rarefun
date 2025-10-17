@@ -51,7 +51,6 @@
 #' table(result$is_anomaly)
 #' }
 #' @importFrom dbscan dbscan kNNdist
-#' @importFrom stats scale
 #' @export
 #'
 rare_dbscan <- function(x,

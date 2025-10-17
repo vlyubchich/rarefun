@@ -48,7 +48,6 @@
 #' points(knee[1], knee[2], col = "red", pch = 19)
 #' }
 #' @importFrom quantmod findPeaks
-#' @importFrom stats diff
 #' @export
 #'
 kneedle <- function(x, y, decreasing = NULL, concave = NULL, sensitivity = 1) {
