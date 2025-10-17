@@ -58,10 +58,6 @@ table(result$is_anomaly)
 - **Vyacheslav Lyubchich** (Maintainer) - [ORCID: 0000-0001-7936-4285](https://orcid.org/0000-0001-7936-4285)
 - **Geneviève Nesslage** - [ORCID: 0000-0003-1770-6803](https://orcid.org/0000-0003-1770-6803)
 
-## License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
