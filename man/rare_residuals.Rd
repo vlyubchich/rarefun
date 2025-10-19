@@ -5,10 +5,10 @@
 \title{Detect Rare Events and Seasonality Shifts in Time Series Residuals}
 \usage{
 rare_residuals(
-  X,
+  x,
   seasonal = FALSE,
-  method = "both",
   period = NULL,
+  method = "all",
   fourier_terms = 2,
   seasonality_shift = seasonal,
   stl_args = list(s.window = 7, robust = TRUE),
@@ -17,19 +17,23 @@ rare_residuals(
 )
 }
 \arguments{
-\item{X}{A numeric vector (time series values) or a data frame with columns
-`time` (numeric or Date) and `value` (numeric). If a vector, assumes regular
-time steps starting from 1.}
+\item{x}{A numeric vector (time series values), a univariate `ts` object, or
+a data frame with columns `time` (numeric or Date) and `value` (numeric).
+If a vector, assumes regular time steps starting from 1. If a `ts` is
+provided, the time index is derived via `stats::time(x)`.}
 
 \item{seasonal}{Logical, indicating if the time series is seasonal (TRUE) or
-non-seasonal (FALSE) (default: FALSE).}
+non-seasonal (FALSE) (default: FALSE). If `x` is a univariate `ts` object with
+`frequency(x) > 1`, the function will automatically treat the series as
+seasonal (i.e., set `seasonal = TRUE`).}
+
+\item{period}{Numeric, the period of seasonality, e.g., 12 for monthly or 365.25
+for daily data (default: NULL). If NULL and `seasonal == TRUE`, the period is
+automatically determined. For `ts` input, `frequency(x)` is used; otherwise, it is
+estimated using spectral analysis.}
 
 \item{method}{Character, specifying the anomaly detection method: "iforest",
-"dbscan", or "both" (default: "both").}
-
-\item{period}{Numeric, the period of seasonality (e.g., 12 for monthly, 365.25
-for daily) if `seasonal = TRUE`. If NULL, estimated using spectral analysis
-(default: NULL).}
+"dbscan", or "all" (default: "all").}
 
 \item{fourier_terms}{Integer, number of Fourier term pairs for seasonal modeling
 in Fourier smoothing (default: 2).}
@@ -38,13 +42,13 @@ in Fourier smoothing (default: 2).}
 spring) by comparing STL and Fourier seasonal components (default: TRUE if
 `seasonal = TRUE`).}
 
-\item{stl_args}{A named list of arguments passed to `stats::stl`.
-Default: `list(s.window = 7, robust = TRUE)`.}
+\item{stl_args}{A named list of arguments passed to `stats::stl()` for detrending and
+deseasonalizing `x`. Default: `list(s.window = 7, robust = TRUE)`.}
 
-\item{iforest_args}{A named list of arguments passed to `rare_iforest` (e.g.,
+\item{iforest_args}{A named list of arguments passed to `rare_iforest()` (e.g.,
 `list(ntrees = 200)`). Default: `list()`.}
 
-\item{dbscan_args}{A named list of arguments passed to `rare_dbscan` (e.g.,
+\item{dbscan_args}{A named list of arguments passed to `rare_dbscan()` (e.g.,
 `list(minPts = 10)`). Default: `list()`.}
 }
 \value{
@@ -55,7 +59,6 @@ A list containing:
         \item \code{time}: Input time points.
         \item \code{value}: Original time series values.
         \item \code{year}: Year extracted from time.
-        \item \code{day}: Day of year (if `seasonal = TRUE` and time is Date).
         \item \code{residual}: Residuals from STL (seasonal) or LOESS (non-seasonal) smoothing.
         \item \code{residual_fourier}: Residuals from Fourier smoothing (if `seasonal = TRUE`).
         \item \code{is_anomaly_iforest}: Logical, anomalies from Isolation Forest (if applicable).
@@ -66,7 +69,7 @@ A list containing:
     \item \code{seasonality_shift}: A list (if `seasonality_shift = TRUE` and
       `seasonal = TRUE`) with:
       \itemize{
-        \item \code{shift_days}: Estimated shift in days (positive if STL peaks
+        \item \code{lag}: Estimated time shift (positive if STL peaks
           earlier than Fourier, e.g., early spring).
         \item \code{stl_seasonal}: Seasonal component from STL.
         \item \code{fourier_seasonal}: Seasonal component from Fourier.
@@ -95,6 +98,10 @@ residuals using `rare_iforest` or `rare_dbscan`. The period is estimated via
 spectral analysis if not provided. Input validation prevents coercion errors.
 Separate argument lists (`stl_args`, `iforest_args`, `dbscan_args`) ensure
 function-specific parameters are passed correctly.
+
+If `x` is a univariate `ts` object with `frequency(x) > 1`, the function will
+automatically treat the series as seasonal (i.e., set `seasonal = TRUE`). When
+`period` is not provided, `frequency(x)` will be used.
 }
 \examples{
 \dontrun{
@@ -102,13 +109,13 @@ function-specific parameters are passed correctly.
 set.seed(123)
 dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 1500)
 value <- sin(2 * pi * seq_along(dates) / 365.25) + rnorm(1500, 0, 0.2)
-X <- data.frame(time = dates, value = value)
-result <- rare_residuals(X, seasonal = TRUE, period = 365.25, method = "both",
+x <- data.frame(time = dates, value = value)
+result <- rare_residuals(x, seasonal = TRUE, period = 365.25, method = "all",
 iforest_args = list(ntrees = 100))
 plot(result$data$time, result$data$value, type = "l", main = "Time Series")
 points(result$data$time[result$data$is_anomaly_iforest],
        result$data$value[result$data$is_anomaly_iforest], col = "red", pch = 19)
-cat("Seasonality shift (days):", result$seasonality_shift$shift_days, "\n")
+cat("Seasonality shift:", result$seasonality_shift$lag, "\n")
 
 # Plot seasonal components
 plot(result$data$time, result$seasonality_shift$stl_seasonal, type = "l",
@@ -116,27 +123,20 @@ plot(result$data$time, result$seasonality_shift$stl_seasonal, type = "l",
 lines(result$data$time, result$seasonality_shift$fourier_seasonal, col = "red")
 legend("topright", c("STL", "Fourier"), col = c("blue", "red"), lty = 1)
 
-# Classic data example
-result <- rare_residuals(as.vector(AirPassengers), seasonal = TRUE, period = 12,
-method = "both", iforest_args = list(ntrees = 100))
-plot(result$data$time, result$data$value, type = "l", main = "Time Series")
-points(result$data$time[result$data$is_anomaly_iforest],
-       result$data$value[result$data$is_anomaly_iforest], col = "red", pch = 19)
-cat("Seasonality shift (days):", result$seasonality_shift$shift_days, "\n")
-
-# Plot seasonal components
-library(ggplot2)
-seasonal_data <- data.frame(
-  time = result$data$time,
-  STL = result$seasonality_shift$stl_seasonal,
-  Fourier = result$seasonality_shift$fourier_seasonal
-)
-ggplot(seasonal_data, aes(x = time)) +
-  geom_line(aes(y = STL, color = "STL"), linewidth = 1) +
-  geom_line(aes(y = Fourier, color = "Fourier"), linewidth = 1) +
-  ggtitle("Seasonal Components") +
-  scale_color_manual(values = c("STL" = "blue", "Fourier" = "red")) +
-  theme_light() + theme(legend.title = element_blank())
-
+# Classic data example (ts input)
+result_AirPassengers <- rare_residuals(AirPassengers,
+                                      method = "iforest",
+                                      iforest_args = list(ntrees = 100,
+                                                          threshold = 0.6))
+# View results
+ggplot2::ggplot(result_AirPassengers$data, aes(x = time, y = value)) +
+   geom_line(color = "gray") +
+   geom_point(aes(color = is_anomaly_iforest)) +
+   labs(title = "Anomaly detection in AirPassengers using isolation forest",
+        x = "Time",
+        y = "Number of passengers",
+        color = "Anomaly status") +
+   scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
+   theme_minimal()
 }
 }
