@@ -95,12 +95,12 @@
 #' legend("topright", c("STL", "Fourier"), col = c("blue", "red"), lty = 1)
 #'
 #' # Classic data example (ts input)
-#'result_AirPassengers <- rare_residuals(AirPassengers,
+#' result_AirPassengers <- rare_residuals(AirPassengers,
 #'                                       method = "iforest",
 #'                                       iforest_args = list(ntrees = 100,
 #'                                                           threshold = 0.6))
-#'# View results
-#'ggplot2::ggplot(result_AirPassengers$data, aes(x = time, y = value)) +
+#' # View results
+#' ggplot2::ggplot(result_AirPassengers$data, aes(x = time, y = value)) +
 #'    geom_line(color = "gray") +
 #'    geom_point(aes(color = is_anomaly_iforest)) +
 #'    labs(title = "Anomaly detection in AirPassengers using isolation forest",
