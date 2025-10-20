@@ -8,10 +8,10 @@ rare_residuals(
   x,
   seasonal = FALSE,
   period = NULL,
-  method = "all",
+  method = c("all", "iforest", "dbscan"),
   fourier_terms = 2,
   seasonality_shift = seasonal,
-  stl_args = list(s.window = 7, robust = TRUE),
+  stl_args = list(),
   iforest_args = list(),
   dbscan_args = list()
 )
@@ -43,7 +43,11 @@ spring) by comparing STL and Fourier seasonal components (default: TRUE if
 `seasonal = TRUE`).}
 
 \item{stl_args}{A named list of arguments passed to `stats::stl()` for detrending and
-deseasonalizing `x`. Default: `list(s.window = 7, robust = TRUE)`.}
+deseasonalizing `x`. Default: empty list `list()`.
+If not provided or empty, dynamic defaults favoring shift detection are used:
+`s.window` ≈ nearest odd to max(7, 1.5 × period), `t.window` ≈ nearest odd to
+max(13, 1.5 × period), and `robust = TRUE`. If you provide a partial list,
+missing keys are filled with these dynamic defaults.}
 
 \item{iforest_args}{A named list of arguments passed to `rare_iforest()` (e.g.,
 `list(ntrees = 200)`). Default: `list()`.}

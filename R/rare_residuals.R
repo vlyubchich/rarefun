@@ -27,7 +27,11 @@
 #'   spring) by comparing STL and Fourier seasonal components (default: TRUE if
 #'   `seasonal = TRUE`).
 #' @param stl_args A named list of arguments passed to `stats::stl()` for detrending and
-#'    deseasonalizing `x`. Default: `list(s.window = 7, robust = TRUE)`.
+#'    deseasonalizing `x`. Default: empty list `list()`.
+#'    If not provided or empty, dynamic defaults favoring shift detection are used:
+#'    `s.window` ≈ nearest odd to max(7, 1.5 × period), `t.window` ≈ nearest odd to
+#'    max(13, 1.5 × period), and `robust = TRUE`. If you provide a partial list,
+#'    missing keys are filled with these dynamic defaults.
 #' @param iforest_args A named list of arguments passed to `rare_iforest()` (e.g.,
 #'   `list(ntrees = 200)`). Default: `list()`.
 #' @param dbscan_args A named list of arguments passed to `rare_dbscan()` (e.g.,
@@ -117,7 +121,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
                            method = c("all", "iforest", "dbscan"),
                            fourier_terms = 2,
                            seasonality_shift = seasonal,
-                           stl_args = list(s.window = 7, robust = TRUE),
+                           stl_args = list(),
                            iforest_args = list(),
                            dbscan_args = list()) {
     # Input validation
@@ -215,25 +219,55 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     if (seasonal) {
         # STL decomposition for seasonal data
         ts_data <- stats::ts(value, frequency = period)
-        stl_fit <- do.call(stats::stl, c(list(x = ts_data), stl_args))
+        # Dynamic defaults favoring shift detection (flexible seasonality)
+        nearest_odd <- function(z, min_val) {
+            z <- as.integer(round(z))
+            if (z < min_val) z <- min_val
+            if (z %% 2 == 0) z <- z + 1L
+            z
+        }
+        period_int <- max(2L, as.integer(round(period)))
+        # Propose windows based on period and length
+        s_prop <- nearest_odd(max(7L, as.integer(round(1.5 * period_int))), 7L)
+        t_prop <- nearest_odd(max(13L, as.integer(round(1.5 * period_int))), 3L)
+        # Clamp to series length constraints
+        s_prop <- min(s_prop, if (n %% 2 == 0) n - 1L else n - 2L)
+        if (s_prop < 7L) s_prop <- 7L
+        t_prop <- min(t_prop, if (n %% 2 == 0) n - 1L else n - 2L)
+        if (t_prop < 3L) t_prop <- 3L
+
+        stl_args_mod <- stl_args
+        # If user omitted stl_args or provided an empty list, apply dynamic defaults
+        if (missing(stl_args) || is.null(stl_args_mod) || length(stl_args_mod) == 0) {
+            stl_args_mod <- list(s.window = s_prop, t.window = t_prop, robust = TRUE)
+        } else {
+            if (is.null(stl_args_mod$s.window)) stl_args_mod$s.window <- s_prop
+            if (is.null(stl_args_mod$t.window)) stl_args_mod$t.window <- t_prop
+            if (is.null(stl_args_mod$robust))   stl_args_mod$robust   <- TRUE
+        }
+
+        stl_fit <- do.call(stats::stl, c(list(x = ts_data), stl_args_mod))
         stl_seasonal <- stl_fit$time.series[, "seasonal"]
         # Additional smoothing of the seasonal cycle estimated on daily data
         if (period > 12) {
-            stl_seasonal <- stats::loess(stl_seasonal ~ seq_along(stl_seasonal), span = period/n)$fitted
+            # Make span proportional to one year of the data, period / n, with limits
+            span <- max(0.1, min(0.9, period / n))
+            stl_seasonal <- stats::loess(stl_seasonal ~ seq_along(stl_seasonal), span = span)$fitted
         }
         # Reconstruct fitted values and residuals
         stl_fitted <- stl_seasonal + stl_fit$time.series[, "trend"]
         residual <- ts_data - stl_fitted
 
         # Compute Fourier terms
-        t <- seq(0, 1, length.out = n) * (n - 1) / period
+        i <- 0:(n - 1)
+        omega <- 2 * pi * i / period
         fourier <- data.frame(
             matrix(0, nrow = n, ncol = 2 * fourier_terms)
         )
         colnames(fourier) <- paste0(rep(c("sin", "cos"), each = fourier_terms), 1:fourier_terms)
         for (k in 1:fourier_terms) {
-            fourier[[paste0("sin", k)]] <- sin(2 * pi * k * t)
-            fourier[[paste0("cos", k)]] <- cos(2 * pi * k * t)
+            fourier[[paste0("sin", k)]] <- sin(omega * k)
+            fourier[[paste0("cos", k)]] <- cos(omega * k)
         }
 
         # Fourier smoothing of detrended data

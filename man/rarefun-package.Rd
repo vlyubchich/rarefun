@@ -6,7 +6,7 @@
 \alias{rarefun-package}
 \title{rarefun: Functions for Rare Events Analysis}
 \description{
-A collection of functions for detecting and analyzing rare events in datasets. Includes implementations of various anomaly detection methods such as isolation forest, DBSCAN clustering, and residual-based approaches. Provides tools for spatial point matching, time series extraction, and statistical testing for rare event patterns.
+Functions for detecting and analyzing rare events in data. Includes isolation forest and DBSCAN clustering for time series residuals. Handles time series with STL/LOESS, Fourier smoothing, and estimates seasonality shifts. Also provides tools for spatial point matching, and statistical testing for rare event patterns.
 }
 \seealso{
 Useful links:
