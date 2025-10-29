@@ -11,23 +11,18 @@
 ## Features
 
 - **Anomaly Detection Methods:**
-  - Isolation Forest (`rare_iforest`)
+  - Removing trend (and seasonality) to analyze rare events in residuals (`rare_residuals`), including the following techniques:
+  - Isolation forest (`rare_iforest`)
   - DBSCAN clustering (`rare_dbscan`)
-  - Residual-based analysis (`rare_residuals`)
-
+  
 - **Spatial Analysis:**
-  - Spatial point matching (`match_spatial_points`)
-  - Geographic data processing
-
-- **Time Series Tools:**
-  - Time series extraction (`extract_ts`)
-  - Temporal pattern analysis
+  - Spatial point matching based on geographic corrdinates (`match_spatial_points`), including fast nearest neighbor search
 
 - **Statistical Methods:**
   - Contingency table chi-square tests (`contingency_chisq`)
-  - Goodness-of-fit tests for quantile regression (`gof_qr`)
-  - Matthews Correlation Coefficient (`mcc`)
-  - Partial quantile random forest (`partial_qrf`)
+  - Matthews Correlation Coefficient (`mcc`), including bootstrap confidence intervals
+  - Goodness-of-fit metrics (R1, ATWE) for quantile regression (`gof_qr`)
+  - Partial dependence plots for quantile random forest (`partial_qrf`)
   - Kneedle algorithm for knee point detection (`kneedle`)
 
 ## Installation
