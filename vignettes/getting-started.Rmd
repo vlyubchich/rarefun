@@ -17,7 +17,8 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-The **rarefun** package provides a collection of functions for detecting and analyzing rare events in datasets. This vignette demonstrates the main functionalities of the package.
+The **rarefun** package provides a collection of functions for detecting and analyzing rare events in time series. 
+This vignette demonstrates the main functionality of the package.
 
 ## Installation
 
@@ -30,6 +31,7 @@ devtools::install_github("vlyubchich/rarefun")
 
 ```{r setup}
 library(rarefun)
+library(ggplot2)
 ```
 
 ## Anomaly Detection Methods
@@ -42,9 +44,10 @@ The Isolation Forest algorithm is effective for detecting anomalies in high-dime
 # Create sample data with outliers
 set.seed(123)
 data <- matrix(rnorm(1000), nrow = 500, ncol = 2)
-data[1:5, ] <- data[1:5, ] + 10  # Add outliers
+# Add outliers
+data[1:5, ] <- data[1:5, ] + 10  
 
-# Detect anomalies using Isolation Forest
+# Detect anomalies using isolation forest
 result <- rare_iforest(data, ntrees = 100, threshold = 0.7)
 
 # View results
@@ -57,7 +60,7 @@ plot(data,
      main = "Isolation Forest Anomaly Detection",
      xlab = "Feature 1",
      ylab = "Feature 2")
-legend("topright", 
+legend("topleft", 
        legend = c("Normal", "Anomaly"), 
        col = c("blue", "red"), 
        pch = 19)
@@ -65,10 +68,24 @@ legend("topright",
 
 You can also use it with real datasets like the iris dataset:
 
-```{r iforest-iris}
-# Detect anomalies in iris dataset
-result_iris <- rare_iforest(iris[, 1:4], threshold = 0.5)
-table(result_iris$is_anomaly)
+```{r iforest-AirPassengers}
+# Detect anomalies in AirPassengers dataset
+result_AirPassengers <- rare_residuals(AirPassengers, 
+                                       method = "iforest", 
+                                       iforest_args = list(ntrees = 100,
+                                                            threshold = 0.6))
+
+# View results
+ggplot(result_AirPassengers$data, 
+       aes(x = time, y = value)) +
+  geom_line(color = "gray") +
+  geom_point(aes(color = is_anomaly_iforest)) +
+  labs(title = "Anomaly detection in AirPassengers using isolation forest",
+       x = "Time", 
+       y = "Number of passengers", 
+       color = "Anomaly status") +
+  scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
+  theme_minimal()
 ```
 
 ### DBSCAN Clustering
