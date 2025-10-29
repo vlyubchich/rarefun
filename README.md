@@ -19,7 +19,6 @@
   - Spatial point matching based on geographic corrdinates (`match_spatial_points`), including fast nearest neighbor search
 
 - **Statistical Methods:**
-  - Contingency table chi-square tests (`contingency_chisq`)
   - Matthews Correlation Coefficient (`mcc`), including bootstrap confidence intervals
   - Goodness-of-fit metrics (R1, ATWE) for quantile regression (`gof_qr`)
   - Partial dependence plots for quantile random forest (`partial_qrf`)

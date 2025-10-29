@@ -35,8 +35,10 @@ Suggests:
     knitr,
     rmarkdown,
     ggplot2,
-    dplyr
+    dplyr,
+    Rdpack
 RoxygenNote: 7.3.3
 URL: https://github.com/vlyubchich/rarefun
 BugReports: https://github.com/vlyubchich/rarefun/issues
 VignetteBuilder: knitr, rmarkdown
+RdMacros: Rdpack

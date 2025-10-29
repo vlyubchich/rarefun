@@ -36,7 +36,7 @@ computes the difference between the curve and a reference line, and identifies
 the knee based on peaks in the difference curve, adjusted by a sensitivity parameter.
 }
 \details{
-The code is adapted from \url{https://github.com/etam4260/kneedle}.
+The code is adapted from \url{https://github.com/etam4260/kneedle} licensed under the MIT license (2022).
 
 
 The Kneedle algorithm, described in Satopaa et al. (2011), detects the knee point

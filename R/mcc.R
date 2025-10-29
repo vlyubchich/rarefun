@@ -9,9 +9,9 @@
 #' @param actual A vector of true or observed binary labels. Can be numeric (0/1),
 #'   logical (TRUE/FALSE), character, or factor.
 #' @param predicted A vector of predicted binary labels, of the same type and
-#'   length as `actual`.
+#'   length as \code{actual}.
 #' @param positive_class An optional value explicitly specifying the "positive"
-#'   class label. If `NULL`, the function will infer it.
+#'   class label. If \code{NULL}, the function will infer it.
 #' @param bootstrap_reps The number of bootstrap replicates for p-value calculation.
 #'   Default is 999. Set to 0 to disable bootstrapping.
 #' @param ts A logical flag indicating if the data are time series. Default is FALSE. If TRUE,
@@ -19,24 +19,25 @@
 #'  the data are then assumed to be ordered in time.
 #' @param confidence The confidence level for the bootstrap confidence interval (default: 0.95).
 #'  Must be between 0 and 1 (exclusive).
-#' @param l The block length for the time series bootstrap (default: 5). Only used if `ts` is TRUE,
-#'  see `?boot::tsboot`.
+#' @param l The block length for the time series bootstrap (default: 5). Only used if \code{ts} is TRUE,
+#'  see \code{?boot::tsboot}.
 #' @param sim The type of simulation for the time series bootstrap (default: "fixed").
-#'  Options are "fixed" (moving block bootstrap) or "geom" (stationary bootstrap), see `?boot::tsboot`.
-#' @param ... Additional arguments passed to `boot::tsboot` when `ts` is TRUE.
+#'  Options are "fixed" (moving block bootstrap) or "geom" (stationary bootstrap), see \code{?boot::tsboot}.
+#' @param ... Additional arguments passed to \code{boot::tsboot} when \code{ts} is TRUE.
 #'
 #'
 #' @return A list containing:
-#'   - `confusion_matrix`: The 2x2 confusion matrix.
-#'   - `mcc`: The Matthews Correlation Coefficient (-1 to +1).
-#'   - `chi_square_test`: The output of `chisq.test()`. `$p.value` is the parametric p-value.
-#'   - `mcc_bootstrap_pv`: The p-value from the bootstrap permutation test.
-#'   - `mcc_bootstrap_ci`: The bootstrap confidence interval for the MCC.
-#'   - `mcc_bootstrap_reps`: The number of bootstrap replicates used.
-#'   - `positive_class`: The positive class label used.
-#'   - `confidence`: The confidence level for the bootstrap confidence interval.
-#'   - `ts`: Whether the data were treated as time series.
-#'
+#'   \itemize{
+#'   \item \code{confusion_matrix}: The 2x2 confusion matrix.
+#'   \item \code{mcc}: The Matthews Correlation Coefficient (-1 to +1).
+#'   \item \code{chi_square_test}: The output of \code{chisq.test()}. \code{$p.value} is the parametric p-value.
+#'   \item \code{mcc_bootstrap_pv}: The p-value from the bootstrap permutation test.
+#'   \item \code{mcc_bootstrap_ci}: The bootstrap confidence interval for the MCC.
+#'   \item \code{mcc_bootstrap_reps}: The number of bootstrap replicates used.
+#'   \item \code{positive_class}: The positive class label used.
+#'   \item \code{confidence}: The confidence level for the bootstrap confidence interval.
+#'   \item \code{ts}: Whether the data were treated as time series.
+#'   }
 #'
 #' @details
 #' The MCC is a robust metric for binary classification, especially on imbalanced data.
@@ -56,9 +57,9 @@
 #' which is often not true for time series data.
 #'
 #' **For Time Series:** Both standard chi-square and standard bootstrapping assume
-#' data independence. If the `ts` parameter is set to TRUE, the function applies a
+#' data independence. If the \code{ts} parameter is set to TRUE, the function applies a
 #' version of bootstrapping suitable for time series data to account for potential
-#' autocorrelation. The data are assumed to be ordered in time. The block length `l`
+#' autocorrelation. The data are assumed to be ordered in time. The block length \code{l}
 #' can be adjusted based on the expected autocorrelation structure. The chi-square
 #' test is still provided for reference but should be interpreted with caution.
 #' The bootstrap p-value is more reliable for time series data.
@@ -70,7 +71,9 @@
 #' that are as extreme or more extreme than the observed MCC, using a two-tailed
 #' test.
 #' Confidence intervals for the MCC are also provided based on the bootstrap distribution.
-#' The function uses the `boot` package for bootstrapping.
+#' The function uses the \code{boot} package for bootstrapping.
+#'
+#' @seealso \code{\link[stats]{chisq.test}}, \code{\link[boot]{tsboot}}
 #'
 #' @examples
 #' # Example 1: A clear, significant correlation

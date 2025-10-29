@@ -3,8 +3,10 @@ title: "Getting Started with rarefun"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting Started with rarefun}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -34,138 +36,104 @@ library(rarefun)
 library(ggplot2)
 ```
 
-## Anomaly Detection Methods
 
-### Isolation Forest
+## Anomaly Detection and Analysis
 
-The Isolation Forest algorithm is effective for detecting anomalies in high-dimensional data. It works by randomly partitioning the data space and identifying points that are isolated quickly.
+### Residual-based Anomaly Detection with BJsales Data
 
-```{r iforest-example}
-# Create sample data with outliers
-set.seed(123)
-data <- matrix(rnorm(1000), nrow = 500, ncol = 2)
-# Add outliers
-data[1:5, ] <- data[1:5, ] + 10  
+We'll use the built-in BJsales and BJsales.lead time series to demonstrate anomaly detection and comparison.
 
-# Detect anomalies using isolation forest
-result <- rare_iforest(data, ntrees = 100, threshold = 0.7)
+# Visualize time series and anomalies for BJsales
+ggplot(res_sales$data, aes(x = time, y = value)) +
+  geom_line(color = "#2c3e50", size = 0.7) +
+  geom_point(data = subset(res_sales$data, is_anomaly_iforest),
+       aes(x = time, y = value), color = "red", size = 2) +
+  labs(title = "BJsales Time Series with Rare Events (Isolation Forest)",
+    x = "Time", y = "Sales") +
+  theme_minimal()
 
-# View results
-table(result$is_anomaly)
+# Visualize time series and anomalies for BJsales.lead
+ggplot(res_lead$data, aes(x = time, y = value)) +
+  geom_line(color = "#2c3e50", size = 0.7) +
+  geom_point(data = subset(res_lead$data, is_anomaly_iforest),
+       aes(x = time, y = value), color = "red", size = 2) +
+  labs(title = "BJsales.lead Time Series with Rare Events (Isolation Forest)",
+    x = "Time", y = "Sales Lead") +
+  theme_minimal()
 
-# Visualize
-plot(data, 
-     col = ifelse(result$is_anomaly, "red", "blue"), 
-     pch = 19,
-     main = "Isolation Forest Anomaly Detection",
-     xlab = "Feature 1",
-     ylab = "Feature 2")
-legend("topleft", 
-       legend = c("Normal", "Anomaly"), 
-       col = c("blue", "red"), 
-       pch = 19)
-```
+  
+```{r residuals-bjsales, eval=TRUE}
+# Detect anomalies in BJsales
+res_sales <- rare_residuals(BJsales)
+# Detect anomalies in BJsales.lead
+res_lead <- rare_residuals(BJsales.lead)
 
-You can also use it with real datasets like the iris dataset:
-
-```{r iforest-AirPassengers}
-# Detect anomalies in AirPassengers dataset
-result_AirPassengers <- rare_residuals(AirPassengers, 
-                                       method = "iforest", 
-                                       iforest_args = list(ntrees = 100,
-                                                            threshold = 0.6))
-
-# View results
-ggplot(result_AirPassengers$data, 
-       aes(x = time, y = value)) +
+# Visualize anomalies in BJsales
+ggplot(res_sales$data, aes(x = time, y = value)) +
   geom_line(color = "gray") +
   geom_point(aes(color = is_anomaly_iforest)) +
-  labs(title = "Anomaly detection in AirPassengers using isolation forest",
-       x = "Time", 
-       y = "Number of passengers", 
-       color = "Anomaly status") +
+  labs(title = "Anomaly Detection in BJsales (Isolation Forest)",
+    x = "Time", y = "Sales", color = "Anomaly") +
   scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
+  theme_minimal()
+
+# Visualize anomalies in BJsales.lead
+ggplot(res_lead$data, aes(x = time, y = value)) +
+  geom_line(color = "gray") +
+  geom_point(aes(color = is_anomaly_iforest)) +
+  labs(title = "Anomaly Detection in BJsales.lead (Isolation Forest)",
+    x = "Time", y = "Sales Lead", color = "Anomaly") +
+  scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
+  theme_minimal()
+
+# Compare anomaly labels using MCC
+mcc_result <- mcc(res_sales$data$is_anomaly_iforest, res_lead$data$is_anomaly_iforest)
+print(paste("MCC between BJsales and BJsales.lead anomalies:", round(mcc_result$mcc, 3)))
+```
+
+
+## Supporting Functions
+
+
+### Isolation Forest Example (iris dataset)
+
+The Isolation Forest algorithm is effective for detecting anomalies in high-dimensional data. We'll use the iris dataset and visualize results with ggplot2.
+
+```{r iforest-iris, eval=TRUE}
+
+# Use only numeric columns
+iris_num <- iris[, 1:4]
+result <- rare_iforest(iris_num, ntrees = 100, threshold = 0.6)
+iris_plot <- iris_num
+iris_plot$is_anomaly <- result$is_anomaly
+
+ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
+  labs(title = "Isolation Forest Anomaly Detection (iris)",
+    x = "Sepal Length", y = "Sepal Width", color = "Anomaly") +
+  scale_color_manual(values = c("blue", "red"), labels = c("Normal", "Anomaly")) +
   theme_minimal()
 ```
 
-### DBSCAN Clustering
 
-DBSCAN (Density-Based Spatial Clustering of Applications with Noise) identifies anomalies as points that don't belong to any dense cluster.
+### DBSCAN Clustering Example (iris dataset)
 
-```{r dbscan-example}
-# Create sample data
-set.seed(456)
-data <- matrix(rnorm(1000), nrow = 500, ncol = 2)
-data[1:5, ] <- data[1:5, ] + 8  # Add outliers
+DBSCAN (Density-Based Spatial Clustering of Applications with Noise) identifies anomalies as points that don't belong to any dense cluster. We'll use the iris dataset and visualize results with ggplot2.
 
-# Detect anomalies using DBSCAN
-result <- rare_dbscan(data, minPts = 5)
+```{r dbscan-iris, eval=TRUE}
+data(iris)
+iris_num <- iris[, 1:4]
+result <- rare_dbscan(iris_num, minPts = 5)
+iris_plot <- iris_num
+iris_plot$is_anomaly <- result$is_anomaly
+iris_plot$cluster <- factor(result$cluster)
 
-# View results
-table(result$is_anomaly)
-table(result$cluster)
-
-# Visualize
-plot(data, 
-     col = result$cluster + 1, 
-     pch = ifelse(result$is_anomaly, 17, 19),
-     main = "DBSCAN Anomaly Detection",
-     xlab = "Feature 1",
-     ylab = "Feature 2")
-legend("topright", 
-       legend = c("Cluster", "Anomaly"), 
-       pch = c(19, 17))
-```
-
-### Residual-based Anomaly Detection
-
-The `rare_residuals()` function detects anomalies based on model residuals.
-
-```{r residuals-example}
-# Example with linear model residuals
-x <- 1:100
-y <- 2 * x + rnorm(100, 0, 5)
-y[c(10, 50, 90)] <- y[c(10, 50, 90)] + 50  # Add outliers
-
-# Fit model and detect anomalies
-model <- lm(y ~ x)
-result <- rare_residuals(model, threshold = 2.5)
-
-# Visualize
-plot(x, y, 
-     col = ifelse(result$is_anomaly, "red", "blue"),
-     pch = 19,
-     main = "Residual-based Anomaly Detection")
-abline(model, col = "green", lwd = 2)
-```
-
-## Statistical Methods
-
-### Matthews Correlation Coefficient
-
-The `mcc()` function calculates the Matthews Correlation Coefficient, a measure of classification quality:
-
-```{r mcc-example}
-# Example confusion matrix
-predicted <- c(rep(1, 50), rep(0, 50))
-actual <- c(rep(1, 45), rep(0, 5), rep(1, 10), rep(0, 40))
-
-# Calculate MCC
-mcc_value <- mcc(predicted, actual)
-print(paste("MCC:", round(mcc_value, 3)))
-```
-
-### Contingency Table Chi-square Test
-
-The `contingency_chisq()` function performs chi-square tests on contingency tables:
-
-```{r chisq-example}
-# Create contingency table
-observed <- matrix(c(20, 30, 25, 25), nrow = 2)
-
-# Perform test
-result <- contingency_chisq(observed)
-print(result)
+ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
+  geom_point(aes(color = cluster, shape = is_anomaly)) +
+  labs(title = "DBSCAN Anomaly Detection (iris)",
+    x = "Sepal Length", y = "Sepal Width", color = "Cluster", shape = "Anomaly") +
+  scale_color_brewer(palette = "Set1") +
+  scale_shape_manual(values = c(19, 17), labels = c("Normal", "Anomaly")) +
+  theme_minimal()
 ```
 
 ### Kneedle Algorithm
@@ -186,8 +154,6 @@ plot(x, y, type = "l", lwd = 2,
      main = "Knee Point Detection")
 abline(v = knee, col = "red", lty = 2, lwd = 2)
 ```
-
-## Spatial Analysis
 
 ### Spatial Point Matching
 
@@ -211,27 +177,6 @@ matches <- match_spatial_points(points1, points2, max_dist = 0.5)
 head(matches)
 ```
 
-## Time Series Analysis
-
-### Time Series Extraction
-
-The `extract_ts()` function extracts time series from larger datasets:
-
-```{r ts-example}
-# Example with time series data
-dates <- seq(as.Date("2020-01-01"), as.Date("2023-12-31"), by = "day")
-values <- cumsum(rnorm(length(dates)))
-
-data <- data.frame(date = dates, value = values)
-
-# Extract specific time period
-ts_subset <- extract_ts(data, 
-                        start_date = "2022-01-01", 
-                        end_date = "2022-12-31")
-head(ts_subset)
-```
-
-## Advanced Features
 
 ### Goodness-of-fit for Quantile Regression
 
@@ -248,7 +193,7 @@ The `gof_qr()` function tests goodness-of-fit for quantile regression models:
 # print(gof_result)
 ```
 
-### Partial Quantile Random Forest
+### Partial Dependence Plot for Quantile Regression
 
 The `partial_qrf()` function performs partial dependence analysis for quantile random forests:
 
@@ -266,7 +211,7 @@ The `partial_qrf()` function performs partial dependence analysis for quantile r
 
 ## Best Practices
 
-1. **Data Preprocessing**: Always check for missing values and scale your data appropriately before applying anomaly detection methods.
+1. **Data Processing**: Always check for missing values and scale your data appropriately before applying anomaly detection methods.
 
 2. **Parameter Tuning**: The effectiveness of anomaly detection methods depends on parameter choices. Consider cross-validation or domain knowledge to set parameters like `threshold`, `minPts`, or `ntrees`.
 
@@ -282,16 +227,5 @@ For more details on specific functions, see their help pages:
 ?rare_iforest
 ?rare_dbscan
 ?rare_residuals
-?match_spatial_points
-?extract_ts
-?contingency_chisq
-?mcc
-?kneedle
-?gof_qr
-?partial_qrf
+# etc.
 ```
-
-## References
-
-- Liu, F. T., Ting, K. M., & Zhou, Z. H. (2008). Isolation forest. IEEE International Conference on Data Mining.
-- Ester, M., Kriegel, H. P., Sander, J., & Xu, X. (1996). A density-based algorithm for discovering clusters in large spatial databases with noise. KDD.

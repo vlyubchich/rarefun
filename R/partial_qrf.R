@@ -6,7 +6,8 @@
 #' @param object a \code{\link[ranger]{ranger}} quantile random forest object.
 #' @param pred.var character string giving the names of the predictor variables of
 #' interest (see \code{\link[pdp]{partial}}).
-#' @param Q a numeric vector of probabilities for which the plot is desired.
+#' @param Q a numeric vector of probabilities for which the plot is desired
+#'   (default: \code{c(0.05, 0.5, 0.95))}. Values should be between 0 and 1.
 #' @param ... other arguments passed to \code{\link[pdp]{partial}}.
 #'
 #' @return A \code{data.frame} with the following columns:

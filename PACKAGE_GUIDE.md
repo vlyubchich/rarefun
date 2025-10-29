@@ -19,6 +19,29 @@ The rarefun package has been set up with the following structure:
 - **vignettes/**: Package vignettes, including:
   - `getting-started.Rmd`: Introduction vignette
 
+### References and citations
+- **inst/REFERENCES.bib**: BibTeX database used by Rdpack for citations in Rd help files.
+  - We use Rdpack macros like `\insertCite{...}{rarefun}` and `\insertAllCited{}` in roxygen docs.
+  - DESCRIPTION includes `Suggests: Rdpack` and `RdMacros: Rdpack` so these macros render correctly.
+  - To add a new reference, append a BibTeX entry to `inst/REFERENCES.bib` and cite it by its key.
+    Example entry:
+    
+    ```bibtex
+    @article{Haupt_etal_2011,
+      title = {Cross-validating fit and predictive accuracy of nonlinear quantile regressions},
+      author = {Haupt, H. and Kagerer, K. and Schnurbus, J.},
+      journal = {Journal of Applied Statistics},
+      volume = {38},
+      number = {12},
+      pages = {2939--2954},
+      year = {2011},
+      doi = {10.1080/02664763.2011.573542}
+    }
+    ```
+  - Example usage in roxygen:
+    - Inline/textual: `\insertCite{Haupt_etal_2011;textual}{rarefun}`
+    - At end of References: `\insertAllCited{}`
+
 ### Testing
 - **tests/**: Test suite
   - `testthat.R`: Test runner
@@ -27,6 +50,7 @@ The rarefun package has been set up with the following structure:
 ### Other Directories
 - **data/**: For package datasets (if any)
 - **dev/**: Development scripts (excluded from package, not contained in build)
+ - **inst/**: Installed files. We keep `REFERENCES.bib` here for Rdpack citations.
 
 ### Configuration Files
 - **rarefun.Rproj**: RStudio project file
