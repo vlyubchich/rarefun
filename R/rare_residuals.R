@@ -32,6 +32,11 @@
 #'    \code{s.window} ≈ nearest odd to max(7, 1.5 × period), \code{t.window} ≈ nearest odd to
 #'    max(13, 1.5 × period), and \code{robust = TRUE}. If you provide a partial list,
 #'    missing keys are filled with these dynamic defaults.
+#' @param loess_args A named list of arguments passed to \code{stats::loess()} for
+#'   non-seasonal smoothing. Default: \code{list()}. If not provided or empty,
+#'   defaults \code{span = 0.75} and \code{degree = 1} are used. If you provide a
+#'   partial list, missing keys are filled with these defaults. The formula is
+#'   set to \code{value ~ time} unless you explicitly provide \code{formula}.
 #' @param iforest_args A named list of arguments passed to \code{rare_iforest()} (e.g.,
 #'   \code{list(ntrees = 200)}). Default: \code{list()}.
 #' @param dbscan_args A named list of arguments passed to \code{rare_dbscan()} (e.g.,
@@ -42,7 +47,6 @@
 #'       \itemize{
 #'         \item \code{time}: Input time points.
 #'         \item \code{value}: Original time series values.
-#'         \item \code{year}: Year extracted from time.
 #'         \item \code{residual}: Residuals from STL (seasonal) or LOESS (non-seasonal) smoothing.
 #'         \item \code{residual_fourier}: Residuals from Fourier smoothing (if \code{seasonal = TRUE}).
 #'         \item \code{is_anomaly_iforest}: Logical, anomalies from Isolation Forest (if applicable).
@@ -60,7 +64,7 @@
 #'       }
 #'   }
 #' @details
-#' For non-seasonal data, residuals are computed using LOESS with \code{year} as the
+#' For non-seasonal data, residuals are computed using LOESS with \code{time} as the
 #' predictor. For seasonal data, residuals are computed twice: (1) using STL
 #' decomposition to extract the remainder component, and (2) using a full-length
 #' Fourier series to capture fixed periodicity. The STL seasonal component is
@@ -123,6 +127,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
                            fourier_terms = 2,
                            seasonality_shift = seasonal,
                            stl_args = list(),
+                           loess_args = list(),
                            iforest_args = list(),
                            dbscan_args = list()) {
     # Input validation
@@ -187,11 +192,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     time <- x$time
     value <- x$value
     n <- length(value)
-    if (inherits(time, "Date")) {
-        year <- as.numeric(format(time, "%Y"))
-    } else {
-        year <- time
-    }
+    # Use `time` directly for smoothing; do not derive a separate `year` variable.
 
     # If input is ts with frequency > 1, auto-enable seasonality (unless already TRUE)
     if (!is.null(original_ts)) {
@@ -279,7 +280,15 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
         fourier_seasonal <- fourier_fitted
     } else {
         # LOESS for non-seasonal data
-        loess_fit <- stats::loess(value ~ year, span = 0.75, degree = 1)
+        loess_args_mod <- loess_args
+        if (missing(loess_args) || is.null(loess_args_mod) || length(loess_args_mod) == 0) {
+            loess_args_mod <- list(formula = value ~ time, span = 0.75, degree = 1)
+        } else {
+            if (is.null(loess_args_mod$formula)) loess_args_mod$formula <- value ~ time
+            if (is.null(loess_args_mod$span))    loess_args_mod$span    <- 0.75
+            if (is.null(loess_args_mod$degree))  loess_args_mod$degree  <- 1
+        }
+        loess_fit <- do.call(stats::loess, loess_args_mod)
         loess_fitted <- stats::predict(loess_fit)
         residual <- value - loess_fitted
         residual_fourier <- rep(NA, n)
@@ -304,8 +313,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     # Prepare output data frame
     output <- data.frame(
         time = time,
-        value = value,
-        year = year
+        value = value
     )
     output$residual <- residual
     output$residual_fourier <- residual_fourier
