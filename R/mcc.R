@@ -1,15 +1,15 @@
 #' Calculate and Test the Matthews Correlation Coefficient (MCC)
 #'
-#' Based on the vectors of actual and predicted binary values, compute the confusion
-#' matrix and the MCC (mean square contingency coefficient).
+#' Based on two vectors of binary values, compute the confusion matrix and the MCC
+#' (mean square contingency coefficient).
 #' The function implements two methods for testing significance:
 #' 1. A parametric chi-square test.
 #' 2. A non-parametric bootstrap test for a more robust p-value.
 #'
-#' @param actual A vector of true or observed binary labels. Can be numeric (0/1),
+#' @param x A vector of binary labels. Can be numeric (0/1),
 #'   logical (TRUE/FALSE), character, or factor.
-#' @param predicted A vector of predicted binary labels, of the same type and
-#'   length as \code{actual}.
+#' @param y A vector of binary labels, of the same type and
+#'   length as \code{x}.
 #' @param positive_class An optional value explicitly specifying the "positive"
 #'   class label. If \code{NULL}, the function will infer it.
 #' @param bootstrap_reps The number of bootstrap replicates for p-value calculation.
@@ -77,50 +77,50 @@
 #'
 #' @examples
 #' # Example 1: A clear, significant correlation
-#' actual_vals <- rep(c(1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1), 3)
-#' predicted_vals <- rep(c(1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0), 3)
-#' mcc_results <- mcc(actual_vals, predicted_vals, positive_class = 1)
+#' x_vals <- rep(c(1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1), 3)
+#' y_vals <- rep(c(1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0), 3)
+#' mcc_results <- mcc(x_vals, y_vals, positive_class = 1)
 #' print(mcc_results$confusion_matrix)
 #' print(paste("MCC:", round(mcc_results$mcc, 3)))
 #' print(paste("Chi-Square p-value:", round(mcc_results$chi_square_test$p.value, 4)))
 #' print(paste("Bootstrap p-value:", round(mcc_results$mcc_bootstrap_pv, 4)))
 #'
 #' # Example 2: No significant correlation
-#' actual_rand <- rep(c(1, 0, 1, 0, 1, 0, 1, 0, 1, 0), 3)
-#' predicted_rand <- rep(c(1, 1, 0, 0, 1, 1, 0, 0, 1, 0), 3)
-#' mcc_rand <- mcc(actual_rand, predicted_rand, bootstrap_reps = 999)
+#' x_rand <- rep(c(1, 0, 1, 0, 1, 0, 1, 0, 1, 0), 3)
+#' y_rand <- rep(c(1, 1, 0, 0, 1, 1, 0, 0, 1, 0), 3)
+#' mcc_rand <- mcc(x_rand, y_rand, bootstrap_reps = 999)
 #' print(paste("MCC:", round(mcc_rand$mcc, 3)))
 #' print(paste("Bootstrap p-value:", round(mcc_rand$mcc_bootstrap_pv, 4)))
 #'
 #' # Example 3: Time series data with autocorrelation in both series
 #' n <- 100
 #' set.seed(12345)
-#' time_series_actual <- rbinom(n, 1, 0.3)
-#' time_series_predicted <- ifelse(runif(n) < 0.3,
-#'                                time_series_actual,
-#'                                1 - time_series_actual)
+#' ts_x <- rbinom(n, 1, 0.3)
+#' ts_y <- ifelse(runif(n) < 0.3,
+#'                ts_x,
+#'                1 - ts_x)
 #' # Introduce autocorrelation
 #' for (i in 2:n) {
 #'    if (runif(1) < 0.7) {
-#'        time_series_actual[i] <- time_series_actual[i - 1]
-#'        time_series_predicted[i] <- time_series_predicted[i - 1]
+#'        ts_x[i] <- ts_x[i - 1]
+#'        ts_y[i] <- ts_y[i - 1]
 #'    }
 #' }
 #'
 #' # Check autocorrelation at lag 1
 #' par(mfrow = c(1, 2))
-#' mcc(time_series_actual, dplyr::lag(time_series_actual), ts = TRUE, l = 7)$mcc
-#' acf(time_series_actual, main = "ACF of Actual Time Series, treated as numeric")
-#' mcc(time_series_predicted, dplyr::lag(time_series_predicted), ts = TRUE, l = 7)$mcc
-#' acf(time_series_predicted, main = "ACF of Predicted Time Series")
+#' mcc(ts_x, dplyr::lag(ts_x), ts = TRUE, l = 7)$mcc
+#' acf(ts_x, main = "ACF of X Time Series, treated as numeric")
+#' mcc(ts_y, dplyr::lag(ts_y), ts = TRUE, l = 7)$mcc
+#' acf(ts_y, main = "ACF of Y Time Series")
 #'
 #' # Visualize the time series
-#' plot.ts(cbind(time_series_actual, time_series_predicted),
-#'        main = "Time Series of Actual actual Predicted", xlab = "Time")
+#' plot.ts(cbind(ts_x, ts_y),
+#'        main = "Time Series of X and Y", xlab = "Time")
 #'
 #' # Calculate MCC treating data as time series
-#' mcc_ts <- mcc(time_series_actual,
-#'               time_series_predicted,
+#' mcc_ts <- mcc(ts_x,
+#'               ts_y,
 #'               positive_class = 1,
 #'               ts = TRUE, l = 7, bootstrap_reps = 999)
 #' print(paste("MCC:", round(mcc_ts$mcc, 3)))
@@ -133,14 +133,18 @@
 #' @importFrom boot tsboot
 #' @export
 #'
-mcc <- function(actual,
-                predicted,
+mcc <- function(x,
+                y,
                 positive_class = NULL,
                 bootstrap_reps = 999,
                 confidence = 0.95,
                 ts = FALSE,
                 l = 5,
                 sim = "fixed", ...) {
+
+  # --- Capture argument names for confusion matrix labels ---
+  x_name <- deparse(substitute(x))
+  y_name <- deparse(substitute(y))
 
   # --- Internal helper function to compute MCC from a matrix ---
   calculate_mcc_from_matrix <- function(mat) {
@@ -159,20 +163,21 @@ mcc <- function(actual,
   }
 
   # --- Internal helper function to compute MCC for bootstrapping ---
-  calculate_mcc <- function(data, ordered_levels) {
-    mat <- table(Actual = factor(c(data[, 1], ordered_levels, rev(ordered_levels)), levels = ordered_levels),
-                 Predicted = factor(c(data[, 2], ordered_levels, ordered_levels), levels = ordered_levels)) - 1
+  calculate_mcc <- function(data, ordered_levels, xname, yname) {
+    mat <- table(setNames(list(factor(c(data[, 1], ordered_levels, rev(ordered_levels)), levels = ordered_levels),
+                               factor(c(data[, 2], ordered_levels, ordered_levels), levels = ordered_levels)),
+                          c(xname, yname))) - 1
     calculate_mcc_from_matrix(mat)
   }
 
   # --- Input Validation ---
-  if (length(actual) != length(predicted)) {
-    stop("Input vectors 'actual' and 'predicted' must have the same length.")
+  if (length(x) != length(y)) {
+    stop("Input vectors 'x' and 'y' must have the same length.")
   }
-  if (length(actual) == 0) {
+  if (length(x) == 0) {
     stop("Input vectors must not be empty.")
   }
-  unique_values <- sort(unique(c(as.character(actual), as.character(predicted))))
+  unique_values <- sort(unique(c(as.character(x), as.character(y))))
   if (length(unique_values) < 2) {
       warning("Only one class is present in the data. MCC and related stats cannot be calculated.")
       # Return the standard output structure with NAs for calculated values
@@ -194,8 +199,8 @@ mcc <- function(actual,
     warning(paste("Data contains more than two unique values (must be binary):",
                   paste(unique_values, collapse = ", ")))
   }
-  if (length(unique(actual)) > 2) {
-    stop("'actual' vector must be binary (contain at most two unique values).")
+  if (length(unique(x)) > 2) {
+    stop("'x' vector must be binary (contain at most two unique values).")
   }
   if (!is.logical(ts) || length(ts) != 1) {
     stop("`ts` must be a single logical value (TRUE or FALSE).")
@@ -214,9 +219,9 @@ mcc <- function(actual,
 
   # --- Determine Positive/Negative Classes ---
   if (is.null(positive_class)) {
-    if (is.logical(actual)) {
+    if (is.logical(x)) {
       positive_class <- TRUE
-    } else if (is.numeric(actual) && all(actual %in% c(0, 1))) {
+    } else if (is.numeric(x) && all(x %in% c(0, 1))) {
       positive_class <- 1
     } else {
       positive_class <- unique_values[2]
@@ -229,8 +234,9 @@ mcc <- function(actual,
 
   # --- Create Confusion Matrix ---
   ordered_levels <- c(positive_class, negative_class)
-  conf_matrix <- table(Actual = factor(c(actual, ordered_levels, rev(ordered_levels)), levels = ordered_levels),
-                       Predicted = factor(c(predicted, ordered_levels, ordered_levels), levels = ordered_levels)) - 1
+  conf_matrix <- table(setNames(list(factor(c(x, ordered_levels, rev(ordered_levels)), levels = ordered_levels),
+                                     factor(c(y, ordered_levels, ordered_levels), levels = ordered_levels)),
+                                c(x_name, y_name))) - 1
 
   if (any(rowSums(conf_matrix) == 0) || any(colSums(conf_matrix) == 0)) {
       warning("The confusion matrix has a row or column with all zeros. MCC is undefined and returned as NA.")
@@ -258,16 +264,18 @@ mcc <- function(actual,
   if (bootstrap_reps > 0) {
     if (ts) {
       # Time series bootstrap using the tsboot function from the boot package
-      data_matrix <- cbind(as.character(actual), as.character(predicted))
+      data_matrix <- cbind(as.character(x), as.character(y))
       boot_out <- boot::tsboot(data_matrix, statistic = calculate_mcc, ordered_levels = ordered_levels,
+                               xname = x_name, yname = y_name,
                                R = bootstrap_reps, l = l, sim = sim, ...)
       mcc_boot_dist <- boot_out$t
     } else {
       # Standard bootstrap for non-time series data
       mcc_boot_dist <- replicate(bootstrap_reps, {
-        i <- sample(seq_along(predicted), replace = TRUE)
-        boot_matrix <- table(Actual = factor(c(actual[i], ordered_levels, rev(ordered_levels)), levels = ordered_levels),
-                             Predicted = factor(c(predicted[i], ordered_levels, ordered_levels), levels = ordered_levels)) - 1
+        i <- sample(seq_along(y), replace = TRUE)
+        boot_matrix <- table(setNames(list(factor(c(x[i], ordered_levels, rev(ordered_levels)), levels = ordered_levels),
+                                           factor(c(y[i], ordered_levels, ordered_levels), levels = ordered_levels)),
+                                      c(x_name, y_name))) - 1
         calculate_mcc_from_matrix(boot_matrix)
       })
     }
