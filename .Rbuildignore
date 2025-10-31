@@ -15,5 +15,6 @@
 
 ^README\.md$
 
-^vignettes$
-^vignettes/
+# Ignore vignettes from the build
+# ^vignettes$
+# ^vignettes/

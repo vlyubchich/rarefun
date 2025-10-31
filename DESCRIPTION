@@ -26,17 +26,19 @@ Imports:
     dbscan,
     geosphere,
     isotree,
+    Rdpack,
     parallel,
     pdp,
-    quantmod,
     stats
 Suggests:
     testthat (>= 3.0.0),
+    bookdown,
     knitr,
     rmarkdown,
-    ggplot2,
     dplyr,
-    Rdpack
+    ggplot2,
+    patchwork,
+    quantmod
 RoxygenNote: 7.3.3
 URL: https://github.com/vlyubchich/rarefun
 BugReports: https://github.com/vlyubchich/rarefun/issues

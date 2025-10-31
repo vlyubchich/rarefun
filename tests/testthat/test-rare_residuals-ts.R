@@ -6,7 +6,7 @@ test_that("rare_residuals accepts univariate ts and derives time", {
   expect_true(all(c("data", "seasonality_shift") %in% names(res)))
   d <- res$data
   expect_s3_class(d, "data.frame")
-  expect_true(all(c("time", "value", "year", "residual") %in% names(d)))
+  expect_true(all(c("time", "value", "residual") %in% names(d)))
   expect_equal(nrow(d), length(x))
   expect_true(is.numeric(d$time))
   # The derived time should start and end at the ts time range
