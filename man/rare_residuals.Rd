@@ -12,24 +12,25 @@ rare_residuals(
   fourier_terms = 2,
   seasonality_shift = seasonal,
   stl_args = list(),
+  loess_args = list(),
   iforest_args = list(),
   dbscan_args = list()
 )
 }
 \arguments{
-\item{x}{A numeric vector (time series values), a univariate `ts` object, or
-a data frame with columns `time` (numeric or Date) and `value` (numeric).
-If a vector, assumes regular time steps starting from 1. If a `ts` is
-provided, the time index is derived via `stats::time(x)`.}
+\item{x}{A numeric vector (time series values), a univariate \code{ts} object, or
+a data frame with columns \code{time} (numeric or Date) and \code{value} (numeric).
+If a vector, assumes regular time steps starting from 1. If a \code{ts} is
+provided, the time index is derived via \code{stats::time(x)}.}
 
 \item{seasonal}{Logical, indicating if the time series is seasonal (TRUE) or
-non-seasonal (FALSE) (default: FALSE). If `x` is a univariate `ts` object with
-`frequency(x) > 1`, the function will automatically treat the series as
-seasonal (i.e., set `seasonal = TRUE`).}
+non-seasonal (FALSE) (default: FALSE). If \code{x} is a univariate \code{ts} object with
+\code{frequency(x) > 1}, the function will automatically treat the series as
+seasonal (i.e., set \code{seasonal = TRUE}).}
 
 \item{period}{Numeric, the period of seasonality, e.g., 12 for monthly or 365.25
-for daily data (default: NULL). If NULL and `seasonal == TRUE`, the period is
-automatically determined. For `ts` input, `frequency(x)` is used; otherwise, it is
+for daily data (default: NULL). If NULL and \code{seasonal == TRUE}, the period is
+automatically determined. For \code{ts} input, \code{frequency(x)} is used; otherwise, it is
 estimated using spectral analysis.}
 
 \item{method}{Character, specifying the anomaly detection method: "iforest",
@@ -40,20 +41,26 @@ in Fourier smoothing (default: 2).}
 
 \item{seasonality_shift}{Logical, whether to compute seasonality shift (e.g., early
 spring) by comparing STL and Fourier seasonal components (default: TRUE if
-`seasonal = TRUE`).}
+\code{seasonal = TRUE}).}
 
-\item{stl_args}{A named list of arguments passed to `stats::stl()` for detrending and
-deseasonalizing `x`. Default: empty list `list()`.
+\item{stl_args}{A named list of arguments passed to \code{stats::stl()} for detrending and
+deseasonalizing \code{x}. Default: empty list \code{list()}.
 If not provided or empty, dynamic defaults favoring shift detection are used:
-`s.window` ≈ nearest odd to max(7, 1.5 × period), `t.window` ≈ nearest odd to
-max(13, 1.5 × period), and `robust = TRUE`. If you provide a partial list,
+\code{s.window} ≈ nearest odd to max(7, 1.5 × period), \code{t.window} ≈ nearest odd to
+max(13, 1.5 × period), and \code{robust = TRUE}. If you provide a partial list,
 missing keys are filled with these dynamic defaults.}
 
-\item{iforest_args}{A named list of arguments passed to `rare_iforest()` (e.g.,
-`list(ntrees = 200)`). Default: `list()`.}
+\item{loess_args}{A named list of arguments passed to \code{stats::loess()} for
+non-seasonal smoothing. Default: \code{list()}. If not provided or empty,
+defaults \code{span = 0.75} and \code{degree = 1} are used. If you provide a
+partial list, missing keys are filled with these defaults. The formula is
+set to \code{value ~ time} unless you explicitly provide \code{formula}.}
 
-\item{dbscan_args}{A named list of arguments passed to `rare_dbscan()` (e.g.,
-`list(minPts = 10)`). Default: `list()`.}
+\item{iforest_args}{A named list of arguments passed to \code{rare_iforest()} (e.g.,
+\code{list(ntrees = 200)}). Default: \code{list()}.}
+
+\item{dbscan_args}{A named list of arguments passed to \code{rare_dbscan()} (e.g.,
+\code{list(minPts = 10)}). Default: \code{list()}.}
 }
 \value{
 A list containing:
@@ -62,16 +69,15 @@ A list containing:
       \itemize{
         \item \code{time}: Input time points.
         \item \code{value}: Original time series values.
-        \item \code{year}: Year extracted from time.
         \item \code{residual}: Residuals from STL (seasonal) or LOESS (non-seasonal) smoothing.
-        \item \code{residual_fourier}: Residuals from Fourier smoothing (if `seasonal = TRUE`).
+        \item \code{residual_fourier}: Residuals from Fourier smoothing (if \code{seasonal = TRUE}).
         \item \code{is_anomaly_iforest}: Logical, anomalies from Isolation Forest (if applicable).
         \item \code{is_anomaly_dbscan}: Logical, anomalies from DBSCAN (if applicable).
         \item \code{score_iforest}: Anomaly scores from Isolation Forest.
         \item \code{score_dbscan}: Anomaly scores from DBSCAN.
       }
-    \item \code{seasonality_shift}: A list (if `seasonality_shift = TRUE` and
-      `seasonal = TRUE`) with:
+    \item \code{seasonality_shift}: A list (if \code{seasonality_shift = TRUE} and
+      \code{seasonal = TRUE}) with:
       \itemize{
         \item \code{lag}: Estimated time shift (positive if STL peaks
           earlier than Fourier, e.g., early spring).
@@ -89,23 +95,23 @@ smoothing separately, comparing their seasonality estimates to detect shifts
 (e.g., early spring) by analyzing differences in seasonal peaks.
 }
 \details{
-For non-seasonal data, residuals are computed using LOESS with `year` as the
+For non-seasonal data, residuals are computed using LOESS with \code{time} as the
 predictor. For seasonal data, residuals are computed twice: (1) using STL
 decomposition to extract the remainder component, and (2) using a full-length
 Fourier series to capture fixed periodicity. The STL seasonal component is
-smoothed using the `s.window` parameter (numeric for flexible smoothing, "periodic"
+smoothed using the \code{s.window} parameter (numeric for flexible smoothing, "periodic"
 for fixed seasonality) and further smoothed with LOESS for shift detection.
 Seasonality shifts are detected by comparing smoothed STL and Fourier seasonal
 components via cross-correlation to estimate the lag (in days) where peaks differ
 (e.g., early spring). Rare events are detected in STL (or LOESS for non-seasonal)
-residuals using `rare_iforest` or `rare_dbscan`. The period is estimated via
+residuals using \code{rare_iforest} or \code{rare_dbscan}. The period is estimated via
 spectral analysis if not provided. Input validation prevents coercion errors.
-Separate argument lists (`stl_args`, `iforest_args`, `dbscan_args`) ensure
+Separate argument lists (\code{stl_args}, \code{iforest_args}, \code{dbscan_args}) ensure
 function-specific parameters are passed correctly.
 
-If `x` is a univariate `ts` object with `frequency(x) > 1`, the function will
-automatically treat the series as seasonal (i.e., set `seasonal = TRUE`). When
-`period` is not provided, `frequency(x)` will be used.
+If \code{x} is a univariate \code{ts} object with \code{frequency(x) > 1}, the function will
+automatically treat the series as seasonal (i.e., set \code{seasonal = TRUE}). When
+\code{period} is not provided, \code{frequency(x)} will be used.
 }
 \examples{
 \dontrun{
@@ -143,4 +149,7 @@ ggplot2::ggplot(result_AirPassengers$data, aes(x = time, y = value)) +
    scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
    theme_minimal()
 }
+}
+\seealso{
+\code{\link{rare_iforest}}, \code{\link{rare_dbscan}}, \code{\link[stats]{stl}}
 }

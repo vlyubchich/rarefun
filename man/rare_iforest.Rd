@@ -19,11 +19,13 @@ rare_iforest(
 }
 \arguments{
 \item{x}{A numeric matrix or data frame with no missing values (unless
-`missing_action` is set to handle them). Rows are observations, and columns are features.}
+\code{missing_action} is set to handle them). Rows are observations, and columns are features.}
 
-\item{ndim}{Integer, number of dimensions to split at each node (default: 1).}
+\item{ndim}{Integer, number of dimensions to split at each node (default: 1).
+Higher values may improve detection for multivariate anomalies.}
 
-\item{ntrees}{Integer, number of trees in the forest (default: 500).}
+\item{ntrees}{Integer, number of trees in the forest (default: 500).
+More trees generally improve stability but increase computation time.}
 
 \item{missing_action}{Character, how to handle missing values: 'fail', 'impute', or 'auto' (default: 'fail').}
 
@@ -31,25 +33,27 @@ rare_iforest(
 
 \item{penalize_range}{Logical, whether to penalize features with smaller ranges (default: TRUE).}
 
-\item{nthreads}{Integer, number of threads for parallel processing (default: parallel::detectCores() - 1).}
+\item{nthreads}{Integer, number of threads for parallel processing (default: \code{parallel::detectCores() - 1}).}
 
-\item{threshold}{Numeric, anomaly score threshold for classifying rare events (default: 0.5).}
+\item{threshold}{Numeric, anomaly score threshold for classifying rare events (default: 0.5).
+Scores above this value are classified as anomalies. Higher values are more conservative.}
 
-\item{sample_size}{Integer or fraction, number or proportion of rows to sample for training (default: NULL, uses all rows).}
+\item{sample_size}{Integer or fraction, number or proportion of rows to sample for training (default: NULL, uses all rows).
+If <= 1, interpreted as a fraction; otherwise as an absolute count.}
 
-\item{...}{Additional arguments passed to `isotree::isolation.forest`.}
+\item{...}{Additional arguments passed to \code{isotree::isolation.forest}.}
 }
 \value{
 A list containing:
   \itemize{
     \item \code{scores}: Numeric vector of anomaly scores for each observation.
     \item \code{is_anomaly}: Logical vector indicating whether each observation is an anomaly (score > threshold).
-    \item \code{model}: The fitted `isotree` isolation forest model.
+    \item \code{model}: The fitted \code{isotree} isolation forest model.
   }
 }
 \description{
 This function applies an isolation forest algorithm to detect rare events (anomalies)
-in a dataset using the `isotree` package. It fits a model, computes anomaly scores,
+in a dataset using the \code{isotree} package. It fits a model, computes anomaly scores,
 and classifies observations based on a specified threshold.
 }
 \examples{
@@ -67,4 +71,7 @@ table(result$is_anomaly)
 result <- rare_iforest(swiss, threshold = 0.5)
 table(result$is_anomaly)
 }
+}
+\seealso{
+\code{\link{rare_dbscan}}, \code{\link{rare_residuals}}
 }

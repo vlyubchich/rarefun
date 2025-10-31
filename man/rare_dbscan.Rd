@@ -11,22 +11,23 @@ rare_dbscan(x, eps = NULL, minPts = NULL, scale = TRUE, ...)
 observations, and columns are features.}
 
 \item{eps}{Numeric, the maximum distance between two points for them to be
-considered in the same neighborhood (default: estimated using k-nearest neighbors).}
+considered in the same neighborhood (default: NULL, estimated using k-nearest neighbors).}
 
 \item{minPts}{Integer, the minimum number of points required to form a dense
-region (default: 5).}
+region (default: NULL, computed as max(2 * ncol(x), 3)).}
 
 \item{scale}{Logical, whether to scale the data to have mean 0 and standard
 deviation 1 before clustering (default: TRUE).}
 
-\item{...}{Additional arguments passed to `dbscan::dbscan`.}
+\item{...}{Additional arguments passed to \code{dbscan::dbscan}.}
 }
 \value{
 A list containing:
   \itemize{
     \item \code{scores}: Numeric vector of approximate anomaly scores (inverse of
-      k-nearest neighbor distances, normalized; higher values indicate more likely
-      anomalies).
+      k-nearest neighbor distances, normalized to [0, 1]; higher values indicate more likely
+      anomalies). Note: These are heuristic scores and may not align perfectly with
+      DBSCAN's clustering decisions.
     \item \code{is_anomaly}: Logical vector indicating whether each observation is
       a rare event (TRUE for noise points, cluster label 0).
     \item \code{cluster}: Integer vector of cluster assignments (0 for noise, 1+ for clusters).
@@ -36,16 +37,17 @@ A list containing:
 \description{
 This function applies the DBSCAN (Density-Based Spatial Clustering of Applications
 with Noise) algorithm to identify rare events (anomalies) in a dataset using the
-`dbscan` package. Points assigned to the noise cluster (label 0) are considered
+\code{dbscan} package. Points assigned to the noise cluster (label 0) are considered
 rare events. The function computes cluster assignments and returns anomaly labels
 and scores based on the DBSCAN model.
 }
 \details{
 DBSCAN identifies clusters based on density, labeling points that do not belong to
-any dense cluster as noise (cluster 0), which are treated as rare events. If `eps`
-is not specified, it is estimated as the 90th percentile of the k-nearest neighbor
-distances (where k = `minPts - 1`). Scaling is recommended to ensure features contribute
-equally to distance calculations. The `scores` are approximate, based on inverse
+any dense cluster as noise (cluster 0), which are treated as rare events. If \code{eps}
+is not specified, it is estimated using the Kneedle algorithm on the sorted k-nearest
+neighbor distances (where k = \code{minPts - 1}). If \code{minPts} is not specified, it is
+computed as max(2 * ncol(x), 3). Scaling is recommended to ensure features contribute
+equally to distance calculations. The \code{scores} are approximate, based on inverse
 k-nearest neighbor distances, and should be interpreted cautiously.
 }
 \examples{
@@ -63,4 +65,7 @@ table(result$is_anomaly)
 result <- rare_dbscan(swiss)
 table(result$is_anomaly)
 }
+}
+\seealso{
+\code{\link{rare_iforest}}, \code{\link{rare_residuals}}, \code{\link{kneedle}}
 }

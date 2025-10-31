@@ -5,8 +5,8 @@
 \title{Calculate and Test the Matthews Correlation Coefficient (MCC)}
 \usage{
 mcc(
-  actual,
-  predicted,
+  x,
+  y,
   positive_class = NULL,
   bootstrap_reps = 999,
   confidence = 0.95,
@@ -17,14 +17,14 @@ mcc(
 )
 }
 \arguments{
-\item{actual}{A vector of true or observed binary labels. Can be numeric (0/1),
+\item{x}{A vector of binary labels. Can be numeric (0/1),
 logical (TRUE/FALSE), character, or factor.}
 
-\item{predicted}{A vector of predicted binary labels, of the same type and
-length as `actual`.}
+\item{y}{A vector of binary labels, of the same type and
+length as \code{x}.}
 
 \item{positive_class}{An optional value explicitly specifying the "positive"
-class label. If `NULL`, the function will infer it.}
+class label. If \code{NULL}, the function will infer it.}
 
 \item{bootstrap_reps}{The number of bootstrap replicates for p-value calculation.
 Default is 999. Set to 0 to disable bootstrapping.}
@@ -36,29 +36,31 @@ Must be between 0 and 1 (exclusive).}
 a version of bootstrap for time series is applied to account for potential autocorrelation;
 the data are then assumed to be ordered in time.}
 
-\item{l}{The block length for the time series bootstrap (default: 5). Only used if `ts` is TRUE,
-see `?boot::tsboot`.}
+\item{l}{The block length for the time series bootstrap (default: 5). Only used if \code{ts} is TRUE,
+see \code{?boot::tsboot}.}
 
 \item{sim}{The type of simulation for the time series bootstrap (default: "fixed").
-Options are "fixed" (moving block bootstrap) or "geom" (stationary bootstrap), see `?boot::tsboot`.}
+Options are "fixed" (moving block bootstrap) or "geom" (stationary bootstrap), see \code{?boot::tsboot}.}
 
-\item{...}{Additional arguments passed to `boot::tsboot` when `ts` is TRUE.}
+\item{...}{Additional arguments passed to \code{boot::tsboot} when \code{ts} is TRUE.}
 }
 \value{
 A list containing:
-  - `confusion_matrix`: The 2x2 confusion matrix.
-  - `mcc`: The Matthews Correlation Coefficient (-1 to +1).
-  - `chi_square_test`: The output of `chisq.test()`. `$p.value` is the parametric p-value.
-  - `mcc_bootstrap_pv`: The p-value from the bootstrap permutation test.
-  - `mcc_bootstrap_ci`: The bootstrap confidence interval for the MCC.
-  - `mcc_bootstrap_reps`: The number of bootstrap replicates used.
-  - `positive_class`: The positive class label used.
-  - `confidence`: The confidence level for the bootstrap confidence interval.
-  - `ts`: Whether the data were treated as time series.
+  \itemize{
+  \item \code{confusion_matrix}: The 2x2 confusion matrix.
+  \item \code{mcc}: The Matthews Correlation Coefficient (-1 to +1).
+  \item \code{chi_square_test}: The output of \code{chisq.test()}. \code{$p.value} is the parametric p-value.
+  \item \code{mcc_bootstrap_pv}: The p-value from the bootstrap permutation test.
+  \item \code{mcc_bootstrap_ci}: The bootstrap confidence interval for the MCC.
+  \item \code{mcc_bootstrap_reps}: The number of bootstrap replicates used.
+  \item \code{positive_class}: The positive class label used.
+  \item \code{confidence}: The confidence level for the bootstrap confidence interval.
+  \item \code{ts}: Whether the data were treated as time series.
+  }
 }
 \description{
-Based on the vectors of actual and predicted binary values, compute the confusion
-matrix and the MCC (mean square contingency coefficient).
+Based on two vectors of binary values, compute the confusion matrix and the MCC
+(mean square contingency coefficient).
 The function implements two methods for testing significance:
 1. A parametric chi-square test.
 2. A non-parametric bootstrap test for a more robust p-value.
@@ -81,9 +83,9 @@ The **chi-square test** is fast but assumes that each observation is independent
 which is often not true for time series data.
 
 **For Time Series:** Both standard chi-square and standard bootstrapping assume
-data independence. If the `ts` parameter is set to TRUE, the function applies a
+data independence. If the \code{ts} parameter is set to TRUE, the function applies a
 version of bootstrapping suitable for time series data to account for potential
-autocorrelation. The data are assumed to be ordered in time. The block length `l`
+autocorrelation. The data are assumed to be ordered in time. The block length \code{l}
 can be adjusted based on the expected autocorrelation structure. The chi-square
 test is still provided for reference but should be interpreted with caution.
 The bootstrap p-value is more reliable for time series data.
@@ -95,54 +97,54 @@ The bootstrap p-value is calculated as the proportion of bootstrap MCC values
 that are as extreme or more extreme than the observed MCC, using a two-tailed
 test.
 Confidence intervals for the MCC are also provided based on the bootstrap distribution.
-The function uses the `boot` package for bootstrapping.
+The function uses the \code{boot} package for bootstrapping.
 }
 \examples{
 # Example 1: A clear, significant correlation
-actual_vals <- rep(c(1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1), 3)
-predicted_vals <- rep(c(1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0), 3)
-mcc_results <- mcc(actual_vals, predicted_vals, positive_class = 1)
+x_vals <- rep(c(1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1), 3)
+y_vals <- rep(c(1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0), 3)
+mcc_results <- mcc(x_vals, y_vals, positive_class = 1)
 print(mcc_results$confusion_matrix)
 print(paste("MCC:", round(mcc_results$mcc, 3)))
 print(paste("Chi-Square p-value:", round(mcc_results$chi_square_test$p.value, 4)))
 print(paste("Bootstrap p-value:", round(mcc_results$mcc_bootstrap_pv, 4)))
 
 # Example 2: No significant correlation
-actual_rand <- rep(c(1, 0, 1, 0, 1, 0, 1, 0, 1, 0), 3)
-predicted_rand <- rep(c(1, 1, 0, 0, 1, 1, 0, 0, 1, 0), 3)
-mcc_rand <- mcc(actual_rand, predicted_rand, bootstrap_reps = 999)
+x_rand <- rep(c(1, 0, 1, 0, 1, 0, 1, 0, 1, 0), 3)
+y_rand <- rep(c(1, 1, 0, 0, 1, 1, 0, 0, 1, 0), 3)
+mcc_rand <- mcc(x_rand, y_rand, bootstrap_reps = 999)
 print(paste("MCC:", round(mcc_rand$mcc, 3)))
 print(paste("Bootstrap p-value:", round(mcc_rand$mcc_bootstrap_pv, 4)))
 
 # Example 3: Time series data with autocorrelation in both series
 n <- 100
 set.seed(12345)
-time_series_actual <- rbinom(n, 1, 0.3)
-time_series_predicted <- ifelse(runif(n) < 0.3,
-                               time_series_actual,
-                               1 - time_series_actual)
+ts_x <- rbinom(n, 1, 0.3)
+ts_y <- ifelse(runif(n) < 0.3,
+               ts_x,
+               1 - ts_x)
 # Introduce autocorrelation
 for (i in 2:n) {
    if (runif(1) < 0.7) {
-       time_series_actual[i] <- time_series_actual[i - 1]
-       time_series_predicted[i] <- time_series_predicted[i - 1]
+       ts_x[i] <- ts_x[i - 1]
+       ts_y[i] <- ts_y[i - 1]
    }
 }
 
 # Check autocorrelation at lag 1
 par(mfrow = c(1, 2))
-mcc(time_series_actual, dplyr::lag(time_series_actual), ts = TRUE, l = 7)$mcc
-acf(time_series_actual, main = "ACF of Actual Time Series, treated as numeric")
-mcc(time_series_predicted, dplyr::lag(time_series_predicted), ts = TRUE, l = 7)$mcc
-acf(time_series_predicted, main = "ACF of Predicted Time Series")
+mcc(ts_x, dplyr::lag(ts_x), ts = TRUE, l = 7)$mcc
+acf(ts_x, main = "ACF of X Time Series, treated as numeric")
+mcc(ts_y, dplyr::lag(ts_y), ts = TRUE, l = 7)$mcc
+acf(ts_y, main = "ACF of Y Time Series")
 
 # Visualize the time series
-plot.ts(cbind(time_series_actual, time_series_predicted),
-       main = "Time Series of Actual actual Predicted", xlab = "Time")
+plot.ts(cbind(ts_x, ts_y),
+       main = "Time Series of X and Y", xlab = "Time")
 
 # Calculate MCC treating data as time series
-mcc_ts <- mcc(time_series_actual,
-              time_series_predicted,
+mcc_ts <- mcc(ts_x,
+              ts_y,
               positive_class = 1,
               ts = TRUE, l = 7, bootstrap_reps = 999)
 print(paste("MCC:", round(mcc_ts$mcc, 3)))
@@ -151,4 +153,7 @@ print(paste("Bootstrap p-value:", round(mcc_ts$mcc_bootstrap_pv, 4)))
 print(paste("Bootstrap CI:",
    paste(round(mcc_ts$mcc_bootstrap_ci, 3), collapse = " to ")))
 
+}
+\seealso{
+\code{\link[stats]{chisq.test}}, \code{\link[boot]{tsboot}}
 }

@@ -9,7 +9,7 @@ kneedle(x, y, decreasing = NULL, concave = NULL, sensitivity = 1)
 \arguments{
 \item{x}{A numeric vector of x coordinates, strictly increasing or decreasing.}
 
-\item{y}{A numeric vector of y coordinates, same length as `x`.}
+\item{y}{A numeric vector of y coordinates, same length as \code{x}.}
 
 \item{decreasing}{Logical, indicating if the curve is decreasing (TRUE) or
 increasing (FALSE). If NULL, the function estimates the direction based on the
@@ -25,7 +25,8 @@ the knee (default: 1).}
 }
 \value{
 A numeric vector of length 2 containing the x and y coordinates of the
-  detected knee point. If no knee is found, returns `c(NA, NA)`.
+  detected knee point. If no knee is found, returns \code{c(NA, NA)}. This can occur
+  when the curve is too smooth or lacks a clear inflection point.
 }
 \description{
 This function implements the Kneedle algorithm to detect the "knee" or "elbow"
@@ -43,8 +44,8 @@ The Kneedle algorithm, described in Satopaa et al. (2011), detects the knee poin
 by normalizing the input data to [0, 1], computing the difference between the
 normalized curve and a reference line (x = y or x = 1 - y, depending on
 direction and concavity), and identifying peaks in the difference curve. The first
-peak exceeding a threshold (adjusted by `sensitivity`) is selected as the knee.
-The function automatically estimates `decreasing` and `concave` if not specified,
+peak exceeding a threshold (adjusted by \code{sensitivity}) is selected as the knee.
+The function automatically estimates \code{decreasing} and \code{concave} if not specified,
 using the slope from the first to last point and the average second derivative,
 respectively.
 }

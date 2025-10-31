@@ -7,54 +7,54 @@
 match_spatial_points(A, B, max_dist = Inf, fast = TRUE, ...)
 }
 \arguments{
-\item{A}{A data frame containing the first set of points with columns `id`
-(character or numeric identifier), `lat` (latitude in degrees, -90 to 90), and
-`lon` (longitude in degrees, -180 to 180).}
+\item{A}{A data frame containing the first set of points with columns \code{id}
+(character or numeric identifier), \code{lat} (latitude in degrees, -90 to 90), and
+\code{lon} (longitude in degrees, -180 to 180).}
 
-\item{B}{A data frame containing the second set of points with columns `id`
-(character or numeric identifier), `lat` (latitude in degrees, -90 to 90), and
-`lon` (longitude in degrees, -180 to 180).}
+\item{B}{A data frame containing the second set of points with columns \code{id}
+(character or numeric identifier), \code{lat} (latitude in degrees, -90 to 90), and
+\code{lon} (longitude in degrees, -180 to 180).}
 
 \item{max_dist}{Numeric, the maximum geodesic distance (in meters) for a valid
-match. Points with distances exceeding this threshold are assigned `NA` in the
-output. Default is `Inf` (no threshold).}
+match. Points with distances exceeding this threshold are assigned \code{NA} in the
+output. Default is \code{Inf} (no threshold).}
 
 \item{fast}{Logical, indicating whether to use fast Euclidean distance-based
-matching (`TRUE`, default) via `RANN::nn2` or slower geodesic distance-based
-matching (`FALSE`) via `geosphere::distGeo`. Regardless of the method, final
+matching (\code{TRUE}, default) via \code{RANN::nn2} or slower geodesic distance-based
+matching (\code{FALSE}) via \code{geosphere::distGeo}. Regardless of the method, final
 distances are computed as geodesic distances.}
 
-\item{...}{Additional arguments passed to `RANN::nn2` (if `fast = TRUE`).}
+\item{...}{Additional arguments passed to \code{RANN::nn2} (if \code{fast = TRUE}).}
 }
 \value{
-A data frame with one row per point in `A`, containing the following columns:
+A data frame with one row per point in \code{A}, containing the following columns:
   \itemize{
-    \item \code{id_A}: Identifier of the point from `A`.
-    \item \code{lat_A}: Latitude of the point from `A`.
-    \item \code{lon_A}: Longitude of the point from `A`.
-    \item \code{id_B}: Identifier of the nearest point from `B` (or `NA` if no match within `max_dist`).
-    \item \code{lat_B}: Latitude of the nearest point from `B` (or `NA`).
-    \item \code{lon_B}: Longitude of the nearest point from `B` (or `NA`).
-    \item \code{distance_m}: Geodesic distance (in meters) to the nearest point in `B` (or `NA` if no match).
+    \item \code{id_A}: Identifier of the point from \code{A}.
+    \item \code{lat_A}: Latitude of the point from \code{A}.
+    \item \code{lon_A}: Longitude of the point from \code{A}.
+    \item \code{id_B}: Identifier of the nearest point from \code{B} (or \code{NA} if no match within \code{max_dist}).
+    \item \code{lat_B}: Latitude of the nearest point from \code{B} (or \code{NA}).
+    \item \code{lon_B}: Longitude of the nearest point from \code{B} (or \code{NA}).
+    \item \code{distance_m}: Geodesic distance (in meters) to the nearest point in \code{B} (or \code{NA} if no match).
   }
   Column names are dynamically prefixed with the names of the input data frames
-  (e.g., `id_Aa` if `A` is named `Aa`).
+  (e.g., \code{id_Aa} if \code{A} is named \code{Aa}).
 }
 \description{
-Matches each point in the first dataset (`A`) to the nearest point in the second
-dataset (`B`) based on spatial coordinates (latitude and longitude). The function
-supports both fast Euclidean distance-based matching (using `RANN::nn2`) and
-slower, more accurate geodesic distance-based matching (using `geosphere::distGeo`).
+Matches each point in the first dataset (\code{A}) to the nearest point in the second
+dataset (\code{B}) based on spatial coordinates (latitude and longitude). The function
+supports both fast Euclidean distance-based matching (using \code{RANN::nn2}) and
+slower, more accurate geodesic distance-based matching (using \code{geosphere::distGeo}).
 Geodesic distances are always reported in the output, regardless of the matching
 method. An optional maximum distance threshold can be applied to filter matches.
 }
 \details{
-The function matches each point in `A` to the nearest point in `B` based on spatial
-coordinates. If `fast = TRUE`, it uses Euclidean distances for matching (faster but
-less accurate for large distances) via `RANN::nn2`. If `fast = FALSE`, it computes
-geodesic distances for matching using `geosphere::distGeo`, which is more accurate
-but slower. In both cases, the reported `distance_m` is the geodesic distance.
-If `max_dist` is specified, matches exceeding this distance are replaced with `NA`.
+The function matches each point in \code{A} to the nearest point in \code{B} based on spatial
+coordinates. If \code{fast = TRUE}, it uses Euclidean distances for matching (faster but
+less accurate for large distances) via \code{RANN::nn2}. If \code{fast = FALSE}, it computes
+geodesic distances for matching using \code{geosphere::distGeo}, which is more accurate
+but slower. In both cases, the reported \code{distance_m} is the geodesic distance.
+If \code{max_dist} is specified, matches exceeding this distance are replaced with \code{NA}.
 The function handles empty inputs by returning an empty data frame with appropriate
 column names.
 }
@@ -82,4 +82,7 @@ match_spatial_points(Aa, Bb, fast = FALSE)
 match_spatial_points(Aa, Bb, max_dist = 2000)
 }
 
+}
+\seealso{
+\code{\link[geosphere]{distGeo}}, \code{\link[RANN]{nn2}}
 }
