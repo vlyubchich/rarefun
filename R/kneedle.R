@@ -48,7 +48,6 @@
 #' plot(x, y, type = "l", main = "Knee Point Detection")
 #' points(knee[1], knee[2], col = "red", pch = 19)
 #' }
-#' @importFrom quantmod findPeaks
 #' @export
 #'
 kneedle <- function(x, y, decreasing = NULL, concave = NULL, sensitivity = 1) {
