@@ -4,11 +4,13 @@ output:
     bookdown::html_document2:
         base_format: rmarkdown::html_vignette
         fig_caption: yes
+        toc: true
+        toc_depth: 3
 vignette: >
-%\VignetteIndexEntry{Getting Started with rarefun}
-    %\VignetteEncoding{UTF-8}
-    %\VignetteEngine{knitr::rmarkdown}
-    editor_options: 
+  %\VignetteIndexEntry{Getting Started with rarefun}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
   chunk_output_type: console
 ---
 
@@ -16,7 +18,12 @@ vignette: >
 knitr::opts_chunk$set(
     collapse = TRUE,
     comment = "#>",
-    eval = TRUE
+    eval = TRUE,
+    fig.width = 8,
+    fig.height = 5,
+    out.width = "90%",
+    dpi = 150,
+    message = FALSE
 )
 ```
 
@@ -25,16 +32,14 @@ knitr::opts_chunk$set(
 The package `rarefun` provides a collection of functions for detecting and analyzing rare events in time series. 
 This vignette demonstrates the main functionality of the package.
 
-## Installation
-
 You can install the development version of `rarefun` from GitHub:
 
-```{r install, eval = FALSE}
+```{r, eval = FALSE}
 # install.packages("devtools")
 devtools::install_github("vlyubchich/rarefun")
 ```
 
-```{r setup}
+```{r}
 # Load the package
 library(rarefun)
 
@@ -52,9 +57,12 @@ library(patchwork)
 
 ### Minimal example
 
-As a minimal example, we will use the built-in `BJsales` and `BJsales.lead` non-seasonal time series (\@ref(fig:BJsales)).
+As a minimal example, we will use the built-in `BJsales` and `BJsales.lead` non-seasonal time series (Figure \@ref(fig:BJsales)).
 
-```{r BJsales, fig.cap="BJsales and BJsales.lead time series."}
+```{r}
+#| label: BJsales
+#| fig-cap: "BJsales and BJsales.lead time series."
+
 par(mfrow = c(1, 2))
 plot(BJsales, 
      ylab = "BJsales", 
@@ -66,6 +74,7 @@ plot(BJsales.lead,
      xlab = "Time", 
      las = 1)
 grid()
+par(mfrow = c(1, 1))
 ```
 
 First, detect anomalies in each time series using the function `rare_residuals()`, which removes smooth trends and identifies rare events in the residuals.
@@ -87,9 +96,12 @@ res_lead <- rare_residuals(BJsales.lead,
                            iforest_args = list(ntrees = 100))
 ```
 
-Second, visualize the identified anomalies (\@ref(fig:rareBJsales)).
+Second, visualize the identified anomalies (Figure \@ref(fig:rareBJsales)).
 
-```{r rareBJsales, fig-cap="Anomalies detected in BJsales and BJsales.lead using isolation forest."}
+```{r}
+#| label: rareBJsales
+#| fig-cap: "Anomalies detected in BJsales and BJsales.lead using isolation forest."
+
 # Visualize time series and anomalies for BJsales
 p1 <- ggplot(res_sales$data, aes(x = time, y = value)) +
     geom_line(color = "gray50") +
@@ -112,11 +124,13 @@ print(p1 + p2 + plot_layout(ncol = 1))
 
 Third, we can study the associations between the rare events in these two time series.
 Remember to use `ts = TRUE` so that the time series structure is taken into account when bootstrapping the Matthews correlation coefficient (MCC) p-values.
+The `positive_class` argument defines the label for the rare events.
 For example, the contemporaneous associations are as follows, resulting in non-significant MCC and $\chi^2$ tests:
 
 ```{r}
 res0 <- mcc(res_sales$data$is_anomaly_iforest, 
             res_lead$data$is_anomaly_iforest,
+            positive_class = "TRUE",
             ts = TRUE)
 res0$mcc_bootstrap_pv
 res0$chi_square_test$p.value
@@ -127,11 +141,13 @@ In fact, `BJsales.lead` is known to lead `BJsales` by about 3 time steps, so we 
 ```{r}
 mcc(res_sales$data$is_anomaly_iforest, 
     dplyr::lag(res_lead$data$is_anomaly_iforest, 3),
+    positive_class = "TRUE",
     ts = TRUE)
 ```
 
 The results indicate a significant association between rare events in `BJsales.lead` at lag 3 and `BJsales`.
-The code below extracts the identified rare events for `BJsales.lead` and classifies them as positive or negative anomalies:
+
+Finally, the code below extracts the identified rare events for `BJsales.lead` and classifies them as positive or negative anomalies:
 
 ```{r}
 res_lead$data %>% 
@@ -143,9 +159,12 @@ res_lead$data %>%
 
 ### Extended analysis
 
-Note that the function `rare_residuals()` also automatically applied DBSCAN method for detecting rare events (\@ref(fig:rareBJsalesDBSCAN); the argument `method` controls the methods used for detecting rare events), for which a similar analysis using the function `mcc()` can be performed.
+Note that the function `rare_residuals()` also automatically applied DBSCAN method for detecting rare events (Figure \@ref(fig:rareBJsalesDBSCAN); the argument `method` controls the methods used for detecting rare events), for which a similar analysis using the function `mcc()` can be performed.
 
-```{r rareBJsalesDBSCAN, fig-cap="Anomalies detected in BJsales and BJsales.lead using DBSCAN."}
+```{r}
+#| label: rareBJsalesDBSCAN
+#| fig-cap: "Anomalies detected in BJsales and BJsales.lead using DBSCAN."
+
 # Visualize time series and anomalies for BJsales
 p1 <- ggplot(res_sales$data, aes(x = time, y = value)) +
     geom_line(color = "gray50") +
@@ -182,7 +201,10 @@ results_list
 
 Also, the `rare_residuals()` output provides the original data (`value`) and residuals from the LOESS/STL smoother (`residual`), which can be further analyzed.
 
-```{r trendBJsales, fig-cap="Anomalies detected in BJsales and BJsales.lead using DBSCAN."}
+```{r}
+#| label: trendBJsales
+#| fig-cap: "BJsales trend and residuals."
+
 # Visualize trend for BJsales
 p1 <- ggplot(res_sales$data, aes(x = time, y = value - residual)) +
     geom_line() +
@@ -203,143 +225,210 @@ Note that if you would like to remove trends in a different way (for example, `d
 See the sections below for examples.
 
 
-## Residual-based anomaly detection (seasonal time series)
+## Anomaly detection in easonal time series
+
+(Example with seasonal temp data)
+
+### Residual-based anomalies
+
+### Seasonality shifts
+
+### Heatwave-type events
 
 
 
 
-## Supporting Functions
 
 
-### Isolation forest example
+## Supporting functions
 
-The Isolation Forest algorithm is effective for detecting anomalies in high-dimensional data. We'll use the iris dataset and visualize results with ggplot2.
+### Isolation forest
 
-```{r iforest-iris}
+The isolation forest algorithm can be applied separately using the `rare_iforest()` function.
+For example, apply it to the `BJsales` time series detrended by taking consecutive differences:
 
-# Use only numeric columns
-iris_num <- iris[, 1:4]
-result <- rare_iforest(iris_num, ntrees = 100, threshold = 0.6)
-iris_plot <- iris_num
-iris_plot$is_anomaly <- result$is_anomaly
-
-ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
-    labs(title = "Isolation Forest Anomaly Detection (iris)",
-         x = "Sepal Length", y = "Sepal Width", color = "Anomaly") +
-    scale_color_manual(values = c("blue", "red"), labels = c("Normal", "Anomaly")) +
-    theme_minimal()
+```{r}
+x <- as.matrix(diff(BJsales), ncol = 1)
+res_diffsales <- rare_iforest(x, ntrees = 100)
 ```
 
+Count the number of detected anomalies (`TRUE`) at the default threshold of 0.5:
 
-### DBSCAN Clustering Example (iris dataset)
-
-DBSCAN (Density-Based Spatial Clustering of Applications with Noise) identifies anomalies as points that don't belong to any dense cluster. We'll use the iris dataset and visualize results with ggplot2.
-
-```{r dbscan-iris}
-data(iris)
-iris_num <- iris[, 1:4]
-result <- rare_dbscan(iris_num, minPts = 5)
-iris_plot <- iris_num
-iris_plot$is_anomaly <- result$is_anomaly
-iris_plot$cluster <- factor(result$cluster)
-
-ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
-    geom_point(aes(color = cluster, shape = is_anomaly)) +
-    labs(title = "DBSCAN Anomaly Detection (iris)",
-         x = "Sepal Length", y = "Sepal Width", color = "Cluster", shape = "Anomaly") +
-    scale_color_brewer(palette = "Set1") +
-    scale_shape_manual(values = c(19, 17), labels = c("Normal", "Anomaly")) +
-    theme_minimal()
+```{r}
+table(res_diffsales$is_anomaly)
 ```
 
-### Kneedle Algorithm
+Report times of the detected anomalies:
 
-The `kneedle()` function detects knee points in curves, useful for determining optimal thresholds:
-
-```{r kneedle-example}
-# Create curve with knee point
-x <- 1:100
-y <- 100 / (1 + exp(-(x - 50) / 10))
-
-# Find knee point
-knee <- kneedle(x, y)
-print(paste("Knee point at x =", knee))
-
-# Visualize
-plot(x, y, type = "l", lwd = 2,
-     main = "Knee Point Detection")
-abline(v = knee, col = "red", lty = 2, lwd = 2)
+```{r}
+time(diff(BJsales))[res_diffsales$is_anomaly] 
 ```
 
-### Spatial Point Matching
+We can also apply the algorithm to **multivariate data.**
+For example, apply it to the differenced `BJsales` and `BJsales.lead` time series:
 
-The `match_spatial_points()` function matches spatial points between datasets:
+```{r}
+x <- cbind(diff(BJsales), diff(BJsales.lead))
+res_diffsales2 <- rare_iforest(x, ntrees = 100)
+table(res_diffsales2$is_anomaly)
+```
+
+See the help page `?rare_iforest` for other examples.
+
+
+### DBSCAN clustering 
+
+The DBSCAN clustering algorithm is adapted to label the noise cluster (observations not belonging to any cluster) as anomalies.
+It can be applied separately using the function `rare_dbscan()`, similarly to the isolation forest example above.
+For example, apply it to the `BJsales` time series detrended by taking consecutive differences:
+
+```{r}
+x <- as.matrix(diff(BJsales), ncol = 1)
+res_diffsales <- rare_dbscan(x)
+```
+
+Count the number of detected anomalies (`TRUE`):
+
+```{r}
+table(res_diffsales$is_anomaly)
+```
+
+Report times of the detected anomalies:
+
+```{r}
+time(diff(BJsales))[res_diffsales$is_anomaly] 
+```
+
+We can also apply the algorithm to **multivariate data** (each variable is re-scaled automatically with the default setting `scale = TRUE`).
+For example, apply it to the differenced `BJsales` and `BJsales.lead` time series:
+
+```{r}
+x <- cbind(diff(BJsales), diff(BJsales.lead))
+res_diffsales2 <- rare_dbscan(x)
+table(res_diffsales2$is_anomaly)
+```
+
+The DBSCAN output also includes the assigned clusters, which can be plotted as in Figure \@ref(fig:dbscan).
+
+```{r}
+#| label: dbscan
+#| fig-cap: "DBSCAN clustering results for differenced BJsales and BJsales.lead."
+
+x %>% 
+  as.data.frame() %>% 
+  mutate(cluster = res_diffsales2$cluster) %>%
+  ggplot(aes(x = `diff(BJsales)`, 
+             y = `diff(BJsales.lead)`, 
+             color = as.factor(cluster))) +
+  geom_point(size = 2) +
+  labs(color = "Cluster")
+```
+
+See the help page `?rare_dbscan` for other examples.
+
+
+### Kneedle algorithm
+
+The function `kneedle()` detects knee points in curves, useful for determining optimal thresholds such as in elbow methods. 
+A common application is identifying the optimal number of principal components in PCA by finding the "elbow" in the scree plot.
+
+```{r}
+# Perform PCA on mtcars dataset
+pca_result <- prcomp(mtcars, scale. = TRUE)
+
+# Extract variance explained by each component
+variance_explained <- pca_result$sdev^2
+pc_number <- seq_along(variance_explained)
+
+# Find the knee point coordinates
+(knee <- kneedle(pc_number, variance_explained))
+
+# The x-value is the optimal number of components
+n_components <- knee["x"]
+```
+
+```{r}
+#| label: kneedle
+#| fig-cap: "PCA scree plot with knee point detection."
+
+# Visualize scree plot with knee point
+plot(pc_number, variance_explained, type = "b", lwd = 2,
+     xlab = "Principal component",
+     ylab = "Variance explained",
+     las = 1)
+grid()
+points(knee["x"], knee["y"], col = "red", pch = 19, cex = 1.5)
+legend("topright", 
+       legend = paste("Knee at PC", n_components),
+       col = "red", pch = 19)
+```
+
+In the package `rarefun`, the `kneedle()` function is used internally in the function `rare_dbscan()` to help determine optimal value for the parameter `eps`.
+
+
+### Spatial point matching
+
+The function `match_spatial_points()` matches spatial points between datasets:
 
 ```{r spatial-example}
-# Create two sets of spatial points
-set.seed(789)
-points1 <- data.frame(
-    lon = runif(50, -80, -70),
-    lat = runif(50, 35, 45)
+# Create two sets of spatial points, with sample sizes n1 and n2
+n1 <- 50
+n2 <- 30
+
+set.seed(123)
+pointsA <- data.frame(
+    lon = runif(n1, -80, -70),
+    lat = runif(n1, 35, 40),
+    id = paste0("A_", 1:n1)
+)
+pointsB <- data.frame(
+    lon = runif(n2, -80, -70),
+    lat = runif(n2, 35, 40),
+    id = paste0("B_", 1:n2)
 )
 
-points2 <- data.frame(
-    lon = runif(30, -80, -70),
-    lat = runif(30, 35, 45)
-)
-
-# Match points within distance threshold
-matches <- match_spatial_points(points1, points2, max_dist = 0.5)
+# Match points within the distance threshold 50 km
+matches <- match_spatial_points(pointsA, pointsB, max_dist = 50000)
 head(matches)
 ```
 
+The function tries to match points from `pointsB` to `pointsA`, hence the output size matches the number of elements in the dataset `pointsA`:
 
-### Goodness-of-fit for Quantile Regression
-
-The `gof_qr()` function tests goodness-of-fit for quantile regression models:
-
-```{r gof-example}
-# Fit quantile regression (requires quantreg package)
-# library(quantreg)
-# data(engel)
-# fit <- rq(foodexp ~ income, data = engel, tau = 0.5)
-# 
-# # Test goodness-of-fit
-# gof_result <- gof_qr(fit)
-# print(gof_result)
+```{r}
+nrow(matches) == nrow(pointsA)
 ```
 
-### Partial Dependence Plot for Quantile Regression
 
-The `partial_qrf()` function performs partial dependence analysis for quantile random forests:
+### Goodness-of-fit for quantile regression
 
-```{r pqrf-example}
-# Example with random forest (requires quantregForest package)
-# library(quantregForest)
-# set.seed(101)
-# x <- matrix(rnorm(500), ncol = 5)
-# y <- x[,1] + 0.5 * x[,2]^2 + rnorm(100)
-# 
-# # Fit model and compute partial dependence
-# qrf_model <- quantregForest(x, y)
-# partial <- partial_qrf(qrf_model, x, variable = 1)
-```
+The function `gof_qr()` calculates goodness-of-fit metrics for quantile regression models.
 
-## Best Practices
+(add example?)
+
+
+### Partial dependence plots for quantile regression
+
+The function `partial_qrf()` plots partial dependence plots for quantile random forests.
+
+(add example?)
+
+
+## Best practices
 
 1. **Data Processing**: Always check for missing values and scale your data appropriately before applying anomaly detection methods.
 
-2. **Parameter Tuning**: The effectiveness of anomaly detection methods depends on parameter choices. Consider cross-validation or domain knowledge to set parameters like `threshold`, `minPts`, or `ntrees`.
+2. **Parameter Tuning**: The effectiveness of anomaly detection methods depends on parameter choices. Consider cross-validation, sensitivity analysis, or domain knowledge to set parameters like `threshold`, `minPts`, or `ntrees`.
 
 3. **Validation**: Always validate detected anomalies with domain expertise or additional data.
 
 4. **Multiple Methods**: Consider using multiple detection methods and combining their results for more robust anomaly detection.
 
-## Further Reading
+
+## Further reading
 
 For more details on specific functions, see their help pages:
 
-```{r help}
+```{r, eval = FALSE}
 ?rare_iforest
 ?rare_dbscan
 ?rare_residuals
