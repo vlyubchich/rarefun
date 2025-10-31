@@ -1,105 +1,221 @@
 ---
 title: "Getting Started with rarefun"
-output: rmarkdown::html_vignette
+output:
+    bookdown::html_document2:
+        base_format: rmarkdown::html_vignette
+        fig_caption: yes
 vignette: >
-  %\VignetteIndexEntry{Getting Started with rarefun}
-  %\VignetteEncoding{UTF-8}
-  %\VignetteEngine{knitr::rmarkdown}
-editor_options: 
+%\VignetteIndexEntry{Getting Started with rarefun}
+    %\VignetteEncoding{UTF-8}
+    %\VignetteEngine{knitr::rmarkdown}
+    editor_options: 
   chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  eval = FALSE
+    collapse = TRUE,
+    comment = "#>",
+    eval = TRUE
 )
 ```
 
 ## Introduction
 
-The **rarefun** package provides a collection of functions for detecting and analyzing rare events in time series. 
+The package `rarefun` provides a collection of functions for detecting and analyzing rare events in time series. 
 This vignette demonstrates the main functionality of the package.
 
 ## Installation
 
-You can install the development version of rarefun from GitHub:
+You can install the development version of `rarefun` from GitHub:
 
-```{r install}
+```{r install, eval = FALSE}
 # install.packages("devtools")
 devtools::install_github("vlyubchich/rarefun")
 ```
 
 ```{r setup}
+# Load the package
 library(rarefun)
+
+# Load packages for data manipulation
+library(dplyr)
+
+# Load packages for plotting
 library(ggplot2)
+theme_set(theme_minimal())
+library(patchwork)
 ```
 
 
-## Anomaly Detection and Analysis
+## Residual-based anomaly detection and analysis (non-seasonal time series)
 
-### Residual-based Anomaly Detection with BJsales Data
+### Minimal example
 
-We'll use the built-in BJsales and BJsales.lead time series to demonstrate anomaly detection and comparison.
+As a minimal example, we will use the built-in `BJsales` and `BJsales.lead` non-seasonal time series (\@ref(fig:BJsales)).
 
+```{r BJsales, fig.cap="BJsales and BJsales.lead time series."}
+par(mfrow = c(1, 2))
+plot(BJsales, 
+     ylab = "BJsales", 
+     xlab = "Time", 
+     las = 1)
+grid()
+plot(BJsales.lead, 
+     ylab = "BJsales.lead", 
+     xlab = "Time", 
+     las = 1)
+grid()
+```
+
+First, detect anomalies in each time series using the function `rare_residuals()`, which removes smooth trends and identifies rare events in the residuals.
+Since the trends in the data are not very smooth, we will use a small span for the LOESS smoother, for the smooth to be more local.
+We use `ntrees = 100` for the isolation forest method to speed up the computation (increase `ntrees` for more consistent results).
+
+```{r}
+# Set seed for reproducibility
+set.seed(123)
+
+# Detect anomalies in BJsales
+res_sales <- rare_residuals(BJsales, 
+                            loess_args = list(span = 0.1),
+                            iforest_args = list(ntrees = 100))
+
+# Detect anomalies in BJsales.lead
+res_lead <- rare_residuals(BJsales.lead, 
+                           loess_args = list(span = 0.1),
+                           iforest_args = list(ntrees = 100))
+```
+
+Second, visualize the identified anomalies (\@ref(fig:rareBJsales)).
+
+```{r rareBJsales, fig-cap="Anomalies detected in BJsales and BJsales.lead using isolation forest."}
 # Visualize time series and anomalies for BJsales
-ggplot(res_sales$data, aes(x = time, y = value)) +
-  geom_line(color = "#2c3e50", size = 0.7) +
-  geom_point(data = subset(res_sales$data, is_anomaly_iforest),
-       aes(x = time, y = value), color = "red", size = 2) +
-  labs(title = "BJsales Time Series with Rare Events (Isolation Forest)",
-    x = "Time", y = "Sales") +
-  theme_minimal()
+p1 <- ggplot(res_sales$data, aes(x = time, y = value)) +
+    geom_line(color = "gray50") +
+    geom_point(data = subset(res_sales$data, is_anomaly_iforest),
+               aes(x = time, y = value), color = "red", size = 2) +
+    labs(title = "BJsales with rare events identified with isolation forest",
+         x = "Time", y = "BJsales")
 
 # Visualize time series and anomalies for BJsales.lead
-ggplot(res_lead$data, aes(x = time, y = value)) +
-  geom_line(color = "#2c3e50", size = 0.7) +
-  geom_point(data = subset(res_lead$data, is_anomaly_iforest),
-       aes(x = time, y = value), color = "red", size = 2) +
-  labs(title = "BJsales.lead Time Series with Rare Events (Isolation Forest)",
-    x = "Time", y = "Sales Lead") +
-  theme_minimal()
+p2 <- ggplot(res_lead$data, aes(x = time, y = value)) +
+    geom_line(color = "gray50") +
+    geom_point(data = subset(res_lead$data, is_anomaly_iforest),
+               aes(x = time, y = value), color = "red", size = 2) +
+    labs(title = "BJsales.lead with rare events identified with isolation forest",
+         x = "Time", y = "BJsales.lead")
 
-  
-```{r residuals-bjsales, eval=TRUE}
-# Detect anomalies in BJsales
-res_sales <- rare_residuals(BJsales)
-# Detect anomalies in BJsales.lead
-res_lead <- rare_residuals(BJsales.lead)
-
-# Visualize anomalies in BJsales
-ggplot(res_sales$data, aes(x = time, y = value)) +
-  geom_line(color = "gray") +
-  geom_point(aes(color = is_anomaly_iforest)) +
-  labs(title = "Anomaly Detection in BJsales (Isolation Forest)",
-    x = "Time", y = "Sales", color = "Anomaly") +
-  scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
-  theme_minimal()
-
-# Visualize anomalies in BJsales.lead
-ggplot(res_lead$data, aes(x = time, y = value)) +
-  geom_line(color = "gray") +
-  geom_point(aes(color = is_anomaly_iforest)) +
-  labs(title = "Anomaly Detection in BJsales.lead (Isolation Forest)",
-    x = "Time", y = "Sales Lead", color = "Anomaly") +
-  scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
-  theme_minimal()
-
-# Compare anomaly labels using MCC
-mcc_result <- mcc(res_sales$data$is_anomaly_iforest, res_lead$data$is_anomaly_iforest)
-print(paste("MCC between BJsales and BJsales.lead anomalies:", round(mcc_result$mcc, 3)))
+# Combine plots
+print(p1 + p2 + plot_layout(ncol = 1))
 ```
+
+Third, we can study the associations between the rare events in these two time series.
+Remember to use `ts = TRUE` so that the time series structure is taken into account when bootstrapping the Matthews correlation coefficient (MCC) p-values.
+For example, the contemporaneous associations are as follows, resulting in non-significant MCC and $\chi^2$ tests:
+
+```{r}
+res0 <- mcc(res_sales$data$is_anomaly_iforest, 
+            res_lead$data$is_anomaly_iforest,
+            ts = TRUE)
+res0$mcc_bootstrap_pv
+res0$chi_square_test$p.value
+```
+
+In fact, `BJsales.lead` is known to lead `BJsales` by about 3 time steps, so we explore associations between rare events at lag 3 (now displaying all outputs of the function):
+
+```{r}
+mcc(res_sales$data$is_anomaly_iforest, 
+    dplyr::lag(res_lead$data$is_anomaly_iforest, 3),
+    ts = TRUE)
+```
+
+The results indicate a significant association between rare events in `BJsales.lead` at lag 3 and `BJsales`.
+The code below extracts the identified rare events for `BJsales.lead` and classifies them as positive or negative anomalies:
+
+```{r}
+res_lead$data %>% 
+    filter(is_anomaly_iforest) %>%
+    mutate(type = ifelse(residual > 0, "positive", "negative")) %>%
+    select(time, value, type)
+```
+
+
+### Extended analysis
+
+Note that the function `rare_residuals()` also automatically applied DBSCAN method for detecting rare events (\@ref(fig:rareBJsalesDBSCAN); the argument `method` controls the methods used for detecting rare events), for which a similar analysis using the function `mcc()` can be performed.
+
+```{r rareBJsalesDBSCAN, fig-cap="Anomalies detected in BJsales and BJsales.lead using DBSCAN."}
+# Visualize time series and anomalies for BJsales
+p1 <- ggplot(res_sales$data, aes(x = time, y = value)) +
+    geom_line(color = "gray50") +
+    geom_point(data = subset(res_sales$data, is_anomaly_dbscan),
+               aes(x = time, y = value), color = "red", size = 2) +
+    labs(title = "BJsales with rare events identified with DBSCAN",
+         x = "Time", y = "BJsales")
+
+# Visualize time series and anomalies for BJsales.lead
+p2 <- ggplot(res_lead$data, aes(x = time, y = value)) +
+    geom_line(color = "gray50") +
+    geom_point(data = subset(res_lead$data, is_anomaly_dbscan),
+               aes(x = time, y = value), color = "red", size = 2) +
+    labs(title = "BJsales.lead with rare events identified with DBSCAN",
+         x = "Time", y = "BJsales.lead")
+
+# Combine plots
+print(p1 + p2 + plot_layout(ncol = 1))
+```
+
+The `rare_residuals()` output provides anomaly scores for each method that can be used to customize the anomaly detection further. 
+The scores range from 0 to 1, with higher values indicating more anomalous points.
+Thus, we can adjust the threshold for the method to be more or less strict, without re-running the code.
+For example, run a sensitivity analysis for several thresholds applied to the isolation forest outputs, counting the number of rare events for each threshold:
+
+```{r}
+thresholds <- seq(0.4, 0.9, by = 0.1)
+results_list <- sapply(thresholds, function(thresh)
+    sum(res_sales$data$score_iforest > thresh)
+)
+names(results_list) <- paste0("Threshold_", thresholds)
+results_list
+```
+
+Also, the `rare_residuals()` output provides the original data (`value`) and residuals from the LOESS/STL smoother (`residual`), which can be further analyzed.
+
+```{r trendBJsales, fig-cap="Anomalies detected in BJsales and BJsales.lead using DBSCAN."}
+# Visualize trend for BJsales
+p1 <- ggplot(res_sales$data, aes(x = time, y = value - residual)) +
+    geom_line() +
+    labs(title = "BJsales trend",
+         x = "Time", y = "BJsales")
+
+# Visualize residuals for BJsales
+p2 <- ggplot(res_sales$data, aes(x = time, y = residual)) +
+    geom_line() +
+    labs(title = "BJsales trend residuals",
+         x = "Time", y = "BJsales")
+
+# Combine plots
+print(p1 + p2 + plot_layout(ncol = 1))
+```
+
+Note that if you would like to remove trends in a different way (for example, `diff(BJsales)`) or bypass the trend removal step, you can use the `rare_iforest()` and `rare_dbscan()` functions directly.
+See the sections below for examples.
+
+
+## Residual-based anomaly detection (seasonal time series)
+
+
 
 
 ## Supporting Functions
 
 
-### Isolation Forest Example (iris dataset)
+### Isolation forest example
 
 The Isolation Forest algorithm is effective for detecting anomalies in high-dimensional data. We'll use the iris dataset and visualize results with ggplot2.
 
-```{r iforest-iris, eval=TRUE}
+```{r iforest-iris}
 
 # Use only numeric columns
 iris_num <- iris[, 1:4]
@@ -108,10 +224,10 @@ iris_plot <- iris_num
 iris_plot$is_anomaly <- result$is_anomaly
 
 ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
-  labs(title = "Isolation Forest Anomaly Detection (iris)",
-    x = "Sepal Length", y = "Sepal Width", color = "Anomaly") +
-  scale_color_manual(values = c("blue", "red"), labels = c("Normal", "Anomaly")) +
-  theme_minimal()
+    labs(title = "Isolation Forest Anomaly Detection (iris)",
+         x = "Sepal Length", y = "Sepal Width", color = "Anomaly") +
+    scale_color_manual(values = c("blue", "red"), labels = c("Normal", "Anomaly")) +
+    theme_minimal()
 ```
 
 
@@ -119,7 +235,7 @@ ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
 
 DBSCAN (Density-Based Spatial Clustering of Applications with Noise) identifies anomalies as points that don't belong to any dense cluster. We'll use the iris dataset and visualize results with ggplot2.
 
-```{r dbscan-iris, eval=TRUE}
+```{r dbscan-iris}
 data(iris)
 iris_num <- iris[, 1:4]
 result <- rare_dbscan(iris_num, minPts = 5)
@@ -128,12 +244,12 @@ iris_plot$is_anomaly <- result$is_anomaly
 iris_plot$cluster <- factor(result$cluster)
 
 ggplot(iris_plot, aes(x = Sepal.Length, y = Sepal.Width)) +
-  geom_point(aes(color = cluster, shape = is_anomaly)) +
-  labs(title = "DBSCAN Anomaly Detection (iris)",
-    x = "Sepal Length", y = "Sepal Width", color = "Cluster", shape = "Anomaly") +
-  scale_color_brewer(palette = "Set1") +
-  scale_shape_manual(values = c(19, 17), labels = c("Normal", "Anomaly")) +
-  theme_minimal()
+    geom_point(aes(color = cluster, shape = is_anomaly)) +
+    labs(title = "DBSCAN Anomaly Detection (iris)",
+         x = "Sepal Length", y = "Sepal Width", color = "Cluster", shape = "Anomaly") +
+    scale_color_brewer(palette = "Set1") +
+    scale_shape_manual(values = c(19, 17), labels = c("Normal", "Anomaly")) +
+    theme_minimal()
 ```
 
 ### Kneedle Algorithm
@@ -163,13 +279,13 @@ The `match_spatial_points()` function matches spatial points between datasets:
 # Create two sets of spatial points
 set.seed(789)
 points1 <- data.frame(
-  lon = runif(50, -80, -70),
-  lat = runif(50, 35, 45)
+    lon = runif(50, -80, -70),
+    lat = runif(50, 35, 45)
 )
 
 points2 <- data.frame(
-  lon = runif(30, -80, -70),
-  lat = runif(30, 35, 45)
+    lon = runif(30, -80, -70),
+    lat = runif(30, 35, 45)
 )
 
 # Match points within distance threshold

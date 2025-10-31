@@ -192,7 +192,6 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     time <- x$time
     value <- x$value
     n <- length(value)
-    # Use `time` directly for smoothing; do not derive a separate `year` variable.
 
     # If input is ts with frequency > 1, auto-enable seasonality (unless already TRUE)
     if (!is.null(original_ts)) {
