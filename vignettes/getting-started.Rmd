@@ -77,7 +77,7 @@ grid()
 par(mfrow = c(1, 1))
 ```
 
-First, detect anomalies in each time series using the function `rare_residuals()`, which removes smooth trends and identifies rare events in the residuals.
+**First, detect anomalies** in each time series using the function `rare_residuals()`, which removes smooth trends and identifies rare events in the residuals.
 Since the trends in the data are not very smooth, we will use a small span for the LOESS smoother, for the smooth to be more local.
 We use `ntrees = 100` for the isolation forest method to speed up the computation (increase `ntrees` for more consistent results).
 
@@ -96,7 +96,7 @@ res_lead <- rare_residuals(BJsales.lead,
                            iforest_args = list(ntrees = 100))
 ```
 
-Second, visualize the identified anomalies (Figure \@ref(fig:rareBJsales)).
+**Second, visualize the identified anomalies** (Figure \@ref(fig:rareBJsales)).
 
 ```{r}
 #| label: rareBJsales
@@ -122,7 +122,7 @@ p2 <- ggplot(res_lead$data, aes(x = time, y = value)) +
 print(p1 + p2 + plot_layout(ncol = 1))
 ```
 
-Third, we can study the associations between the rare events in these two time series.
+**Third, study the associations** between the rare events in these two time series.
 Remember to use `ts = TRUE` so that the time series structure is taken into account when bootstrapping the Matthews correlation coefficient (MCC) p-values.
 The `positive_class` argument defines the label for the rare events.
 For example, the contemporaneous associations are as follows, resulting in non-significant MCC and $\chi^2$ tests:
@@ -147,7 +147,7 @@ mcc(res_sales$data$is_anomaly_iforest,
 
 The results indicate a significant association between rare events in `BJsales.lead` at lag 3 and `BJsales`.
 
-Finally, the code below extracts the identified rare events for `BJsales.lead` and classifies them as positive or negative anomalies:
+**Finally, extract the identified rare events** for `BJsales.lead` and optionally classify them as positive or negative anomalies:
 
 ```{r}
 res_lead$data %>% 
@@ -225,7 +225,7 @@ Note that if you would like to remove trends in a different way (for example, `d
 See the sections below for examples.
 
 
-## Anomaly detection in easonal time series
+## Anomaly detection in seasonal time series
 
 (Example with seasonal temp data)
 
