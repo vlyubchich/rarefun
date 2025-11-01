@@ -48,7 +48,7 @@ The rarefun package has been set up with the following structure:
   - `testthat/`: Test files directory
 
 ### Other Directories
-- **data/**: For package datasets (if any)
+- **data/**: For package datasets
 - **dev/**: Development scripts (excluded from package, not contained in build)
  - **inst/**: Installed files. We keep `REFERENCES.bib` here for Rdpack citations.
 
