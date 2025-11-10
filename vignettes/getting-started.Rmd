@@ -288,6 +288,7 @@ res_temp <- rare_residuals(tmax_ts,
 ```
 
 Visualize the detected anomalies (Figure \@ref(fig:raretemp)).
+The plot shows the positive anomalies are often represented not by the highest temperatures but by unusually warm days in a spring, while the negative anomalies are often the lowest temperatures observed in Annapolis.
 
 ```{r}
 #| label: raretemp
@@ -412,7 +413,7 @@ ggplot(seasonal_anom, aes(x = year, y = mean_anomaly, color = season)) +
 
 ### Heatwave-type events
 
-The `rare_heatwaves()` function provides a wrapper around the `heatwaveR` package to detect discrete, prolonged high-temperature events (or cold-spells) following the marine heatwave definition of Hobday et al. (2016).
+The `rare_heatwaves()` function provides a wrapper around the `heatwaveR` package to detect discrete, prolonged high- or low-temperature events.
 
 Detect heatwaves in the Annapolis temperature data:
 
@@ -427,10 +428,10 @@ hw <- rare_heatwaves(Annapolis,
                      min_duration = 5)
 
 # Summary of detected events
-cat("Number of heatwave events detected:", nrow(hw$events), "\n")
+cat("Number of heatwaves detected:", nrow(hw$events), "\n")
 ```
 
-Examine the detected heatwave events:
+Examine the detected heatwaves:
 
 ```{r}
 # Display information about detected heatwaves
@@ -446,28 +447,23 @@ Visualize the temperature time series with the 90th percentile threshold and det
 
 ```{r}
 #| label: heatwaves
-#| fig-cap: "Detected heatwave events in Annapolis, MD (last 5 years shown)."
+#| fig-cap: "Detected heatwaves in Annapolis, MD (last 3 years shown). Black line: daily tmax, Blue line: climatology, Green dashed line: 90th percentile, Red filled areas: Heatwaves. Note the `heatwaveR` syntax for filled polygons."
 
-# Plot the last 5 years for clarity
-recent_data <- hw$data %>%
-    filter(t >= as.Date("2020-01-01"))
-
-ggplot(recent_data, aes(x = t, y = temp)) +
-    heatwaveR::geom_flame(aes(y2 = thresh), fill = "salmon") +
+# Plot the last 3 years for clarity
+hw$data %>% 
+    filter(date >= as.Date("2022-01-01")) %>% 
+    ggplot(aes(x = date, y = tmax)) +
+    heatwaveR::geom_flame(aes(y2 = thresh), n = 5, fill = "salmon") +
     geom_line(aes(y = seas), color = "blue", linewidth = 0.5) +
     geom_line(aes(y = thresh), color = "darkgreen", linewidth = 0.5, linetype = "dashed") +
     geom_line(color = "black", linewidth = 0.3) +
-    labs(title = "Heatwave detection (2020-2024)",
-         x = "Date", y = "Temperature (°C)") +
-    annotate("text", x = as.Date("2020-03-01"), y = max(recent_data$temp, na.rm = TRUE),
-             label = "Black: Daily Tmax\nBlue: Climatology\nGreen: 90th percentile\nRed: Heatwave",
-             hjust = 0, vjust = 1, size = 3)
+    labs(x = "Date", y = "Temperature (°C)")
 ```
 
-We can also detect cold-spells by setting `cold_spells = TRUE`:
+We can also detect cold spells by setting `cold_spells = TRUE`:
 
 ```{r}
-# Detect cold-spells (below 10th percentile for 5+ days)
+# Detect cold spells (below 10th percentile for 5+ days)
 cs <- rare_heatwaves(Annapolis, 
                      date_col = "date", 
                      value_col = "tmax",
@@ -477,9 +473,9 @@ cs <- rare_heatwaves(Annapolis,
                      cold_spells = TRUE)
 
 # Summary of detected cold-spells
-cat("Number of cold-spell events detected:", nrow(cs$events), "\n")
+cat("Number of cold spell events detected:", nrow(cs$events), "\n")
 
-# Display top cold-spell events
+# Display the first few cold spells
 if (nrow(cs$events) > 0) {
     cs$events %>%
         select(event_no, date_start, date_end, duration, 
@@ -489,8 +485,21 @@ if (nrow(cs$events) > 0) {
 ```
 
 
+```{r}
+#| label: coldspells
+#| fig-cap: "Detected cold spells in Annapolis, MD (last 3 years shown). Black line: daily tmax, Blue line: climatology, Green dashed line: 10th percentile, Blue filled areas: cold spells. Note the default `ggplot2` syntax for filled polygons."
 
-
+# Plot the last 3 years for clarity
+cs$data %>% 
+    filter(date >= as.Date("2022-01-01")) %>% 
+    ggplot(aes(x = date, y = tmax)) +
+    geom_line(aes(y = seas), color = "blue", linewidth = 0.5) +
+    geom_line(aes(y = thresh), color = "darkgreen", linewidth = 0.5, linetype = "dashed") +
+    geom_line(color = "black", linewidth = 0.3) +
+    geom_ribbon(data = cs$data %>% filter(date >= as.Date("2022-01-01"), event),
+        aes(x = date, ymin = tmax, ymax = thresh), fill = "cornflowerblue", color = NA) +
+    labs(x = "Date", y = "Temperature (°C)")
+```
 
 
 ## Supporting functions
