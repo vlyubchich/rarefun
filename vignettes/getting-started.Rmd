@@ -120,7 +120,7 @@ p2 <- ggplot(res_lead$data, aes(x = time, y = value)) +
          x = "Time", y = "BJsales.lead")
 
 # Combine plots
-print(p1 + p2 + plot_layout(ncol = 1))
+print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
 ```
 
 **Third, study the associations** between the rare events in these two time series.
@@ -183,7 +183,7 @@ p2 <- ggplot(res_lead$data, aes(x = time, y = value)) +
          x = "Time", y = "BJsales.lead")
 
 # Combine plots
-print(p1 + p2 + plot_layout(ncol = 1))
+print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
 ```
 
 The `rare_residuals()` output provides anomaly scores for each method that can be used to customize the anomaly detection further. 
@@ -219,7 +219,7 @@ p2 <- ggplot(res_sales$data, aes(x = time, y = residual)) +
          x = "Time", y = "BJsales")
 
 # Combine plots
-print(p1 + p2 + plot_layout(ncol = 1))
+print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
 ```
 
 Note that if you would like to remove trends in a different way (for example, `diff(BJsales)`) or bypass the trend removal step, you can use the `rare_iforest()` and `rare_dbscan()` functions directly.
@@ -228,13 +228,265 @@ See the sections below for examples.
 
 ## Anomaly detection in seasonal time series
 
-(Example with seasonal temp data)
+For seasonal time series, we can use the built-in `Annapolis` dataset, which contains 30 years (1995-2024) of daily maximum temperature (`tmax`) and precipitation (`pcp`) from Daymet for Annapolis, Maryland.
+
+```{r}
+# Load the Annapolis dataset
+data(Annapolis)
+head(Annapolis)
+
+# Quick summary
+summary(Annapolis)
+```
+
+Visualize the temperature time series (Figure \@ref(fig:annapolistemp)).
+
+```{r}
+#| label: annapolistemp
+#| fig-cap: "Daily maximum temperature in Annapolis, Maryland (1995-2024)."
+
+p1 <- ggplot(Annapolis, aes(x = date, y = tmax)) +
+    geom_line(color = "gray50", linewidth = 0.3) +
+    labs(x = "Date", y = "Maximum temperature (°C)")
+
+p2 <- ggplot(Annapolis, aes(x = date, y = pcp)) +
+    geom_line(color = "cornflowerblue", linewidth = 0.3) +
+    labs(x = "Date", y = "Precipitation (mm)")
+
+# Combine plots
+print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
+```
 
 ### Residual-based anomalies
 
+We can detect anomalies in seasonal time series by first removing the trend and seasonal components. 
+The function `rare_residuals()` supports seasonal decomposition via STL (seasonal time series decomposition using loess).
+
+```{r}
+# Convert to ts object (frequency = 365 for daily data)
+tmax_ts <- ts(Annapolis$tmax, 
+              start = c(1995, 1, 1), 
+              frequency = 365)
+pcp_ts <- ts(Annapolis$pcp, 
+             start = c(1995, 1, 1), 
+             frequency = 365)
+```
+
+Now detect anomalies using `rare_residuals()` with STL decomposition:
+
+```{r}
+# Set seed for reproducibility
+set.seed(456)
+
+# Detect anomalies in monthly temperature
+res_temp <- rare_residuals(tmax_ts, 
+                           seasonal = TRUE, 
+                           period = frequency(tmax_ts),
+                           stl_args = list(l.window = 365 * 2 + 1),
+                           method = "iforest",
+                           iforest_args = list(ntrees = 100, threshold = 0.6))
+```
+
+Visualize the detected anomalies (Figure \@ref(fig:raretemp)).
+
+```{r}
+#| label: raretemp
+#| fig-cap: "Anomalies detected in daily maximum temperature using isolation forest."
+
+res_temp$data %>%
+  mutate(type = ifelse(residual > 0, "positive", "negative")) %>%
+  ggplot(aes(x = time, y = value)) +
+  geom_line(color = "gray50") +
+  geom_point(data = . %>% filter(is_anomaly_iforest),
+             aes(x = time, y = value, color = type), size = 2) +
+  labs(x = "Date", y = "Temperature (°C)",
+       color = "Anomaly type") +
+  scale_color_manual(values = c("positive" = "tomato", "negative" = "cornflowerblue"))
+```
+
+We can also examine anomalous temperatures:
+
+```{r}
+# Extract anomalous months
+anomalous_tmax <- res_temp$data %>%
+  # Replace time with the Date format (instead of decimal year)
+  mutate(time = Annapolis$date) %>%
+  filter(is_anomaly_iforest) %>%
+  mutate(type = ifelse(residual > 0, "positive", "negative")) %>%
+  select(time, value, residual, type)
+
+head(anomalous_tmax, 10)
+```
+
+Visualize the seasonal component and residuals (Figure \@ref(fig:stltemp)):
+
+```{r}
+#| label: stltemp
+#| fig-cap: "STL decomposition components for daily maximum temperature."
+
+# Create a data frame with STL components
+p1 <- ggplot(res_temp$data, aes(x = time, y = value - residual)) +
+    geom_line() +
+    labs(title = "Trend + Seasonal components",
+         x = "Year", y = "Temperature (°C)")
+
+p2 <- ggplot(res_temp$data, aes(x = time, y = residual)) +
+    geom_line() +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+    labs(title = "Residuals after STL",
+         x = "Date", y = "Residual (°C)")
+
+print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
+```
+
 ### Seasonality shifts
 
+Beyond isolated anomalies, we can look for shifts in seasonal patterns. 
+For example, we might want to detect whether certain years have systematically warmer or cooler temperatures than the long-term climatology.
+
+Calculate annual anomalies relative to the long-term monthly climatology:
+
+```{r}
+# Calculate long-term monthly climatology
+monthly_clim <- Annapolis %>%
+    mutate(month = as.integer(format(date, "%m"))) %>%
+    group_by(month) %>%
+    summarize(tmax_clim = mean(tmax, na.rm = TRUE),
+              .groups = "drop")
+
+# Calculate anomalies for each day
+Annapolis_anom <- Annapolis %>%
+    mutate(month = as.integer(format(date, "%m")),
+           year = as.integer(format(date, "%Y"))) %>%
+    left_join(monthly_clim, by = "month") %>%
+    mutate(tmax_anomaly = tmax - tmax_clim)
+
+# Calculate annual mean anomalies
+annual_anom <- Annapolis_anom %>%
+    group_by(year) %>%
+    summarize(mean_anomaly = mean(tmax_anomaly, na.rm = TRUE),
+              .groups = "drop")
+```
+
+Visualize annual temperature anomalies (Figure \@ref(fig:annualanom)):
+
+```{r}
+#| label: annualanom
+#| fig-cap: "Annual mean temperature anomalies in Annapolis, MD."
+
+ggplot(annual_anom, aes(x = year, y = mean_anomaly)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_line(linewidth = 0.8) +
+    geom_point(size = 2) +
+    geom_smooth(method = "lm", se = TRUE, color = "red", linewidth = 0.5) +
+    labs(title = "Annual temperature anomalies with trend",
+         x = "Year", y = "Temperature anomaly (°C)")
+```
+
+We can also examine seasonal shifts by comparing anomalies across different seasons:
+
+```{r}
+# Calculate seasonal anomalies
+seasonal_anom <- Annapolis_anom %>%
+    mutate(season = case_when(
+        month %in% c(12, 1, 2) ~ "Winter",
+        month %in% c(3, 4, 5) ~ "Spring",
+        month %in% c(6, 7, 8) ~ "Summer",
+        month %in% c(9, 10, 11) ~ "Fall"
+    )) %>%
+    group_by(year, season) %>%
+    summarize(mean_anomaly = mean(tmax_anomaly, na.rm = TRUE),
+              .groups = "drop")
+
+# Visualize seasonal anomalies
+ggplot(seasonal_anom, aes(x = year, y = mean_anomaly, color = season)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_line(linewidth = 0.8) +
+    geom_point(size = 1.5) +
+    facet_wrap(~season, ncol = 2) +
+    labs(title = "Seasonal temperature anomalies",
+         x = "Year", y = "Temperature anomaly (°C)",
+         color = "Season") +
+    theme(legend.position = "none")
+```
+
 ### Heatwave-type events
+
+The `rare_heatwaves()` function provides a wrapper around the `heatwaveR` package to detect discrete, prolonged high-temperature events (or cold-spells) following the marine heatwave definition of Hobday et al. (2016).
+
+Detect heatwaves in the Annapolis temperature data:
+
+```{r}
+# Detect heatwaves using default settings
+# (90th percentile threshold, 5-day minimum duration)
+hw <- rare_heatwaves(Annapolis, 
+                     date_col = "date", 
+                     value_col = "tmax",
+                     climatology_period = c("1995-01-01", "2024-12-31"),
+                     pctile = 90,
+                     min_duration = 5)
+
+# Summary of detected events
+cat("Number of heatwave events detected:", nrow(hw$events), "\n")
+```
+
+Examine the detected heatwave events:
+
+```{r}
+# Display information about detected heatwaves
+if (nrow(hw$events) > 0) {
+    hw$events %>%
+        select(event_no, date_start, date_end, duration, 
+               intensity_max, intensity_cumulative) %>%
+        head(10)
+}
+```
+
+Visualize the temperature time series with the 90th percentile threshold and detected heatwaves (Figure \@ref(fig:heatwaves)):
+
+```{r}
+#| label: heatwaves
+#| fig-cap: "Detected heatwave events in Annapolis, MD (last 5 years shown)."
+
+# Plot the last 5 years for clarity
+recent_data <- hw$data %>%
+    filter(t >= as.Date("2020-01-01"))
+
+ggplot(recent_data, aes(x = t, y = temp)) +
+    heatwaveR::geom_flame(aes(y2 = thresh), fill = "salmon") +
+    geom_line(aes(y = seas), color = "blue", linewidth = 0.5) +
+    geom_line(aes(y = thresh), color = "darkgreen", linewidth = 0.5, linetype = "dashed") +
+    geom_line(color = "black", linewidth = 0.3) +
+    labs(title = "Heatwave detection (2020-2024)",
+         x = "Date", y = "Temperature (°C)") +
+    annotate("text", x = as.Date("2020-03-01"), y = max(recent_data$temp, na.rm = TRUE),
+             label = "Black: Daily Tmax\nBlue: Climatology\nGreen: 90th percentile\nRed: Heatwave",
+             hjust = 0, vjust = 1, size = 3)
+```
+
+We can also detect cold-spells by setting `cold_spells = TRUE`:
+
+```{r}
+# Detect cold-spells (below 10th percentile for 5+ days)
+cs <- rare_heatwaves(Annapolis, 
+                     date_col = "date", 
+                     value_col = "tmax",
+                     climatology_period = c("1995-01-01", "2024-12-31"),
+                     pctile = 10,
+                     min_duration = 5,
+                     cold_spells = TRUE)
+
+# Summary of detected cold-spells
+cat("Number of cold-spell events detected:", nrow(cs$events), "\n")
+
+# Display top cold-spell events
+if (nrow(cs$events) > 0) {
+    cs$events %>%
+        select(event_no, date_start, date_end, duration, 
+               intensity_max, intensity_cumulative) %>%
+        head(10)
+}
+```
 
 
 
