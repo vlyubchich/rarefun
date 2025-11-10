@@ -250,11 +250,11 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
         stl_fit <- do.call(stats::stl, c(list(x = ts_data), stl_args_mod))
         stl_seasonal <- stl_fit$time.series[, "seasonal"]
         # Additional smoothing of the seasonal cycle estimated on daily data
-        if (period > 12) {
-            # Make span proportional to one year of the data, period / n, with limits
-            span <- max(0.1, min(0.9, period / n))
-            stl_seasonal <- stats::loess(stl_seasonal ~ seq_along(stl_seasonal), span = span)$fitted
-        }
+        # if (period > 12) {
+        #     # Make span proportional to one year of the data, period / n, with limits
+        #     span <- max(0.1, min(0.9, period / n))
+        #     stl_seasonal <- stats::loess(stl_seasonal ~ seq_along(stl_seasonal), span = span)$fitted
+        # }
         # Reconstruct fitted values and residuals
         stl_fitted <- stl_seasonal + stl_fit$time.series[, "trend"]
         residual <- ts_data - stl_fitted
