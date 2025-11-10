@@ -1,18 +1,14 @@
 #' Detect Heatwaves (or Cold Spells) Using heatwaveR
 #'
 #' This is a thin wrapper around heatwaveR that detects discrete, prolonged,
-#' anomalous high-temperature events (Hobday et al., 2016). It constructs a
+#' anomalous high-temperature events \insertCite{Hobday_etal_2016}{rarefun}. It constructs a
 #' seasonal climatology and a percentile-based threshold, and then identifies
 #' events that exceed the threshold for a minimum duration.
-#'
-#' The function requires daily data with a Date column. For general anomaly
-#' detection in arbitrary time series or at other sampling resolutions, see
-#' [rare_residuals()].
 #'
 #' @param data A data.frame (or tibble) containing a Date column and a numeric
 #'   temperature column.
 #' @param date_col Name of the Date column (default: "date").
-#' @param value_col Name of the numeric temperature column (default: "temp").
+#' @param value_col Name of the numeric temperature column (default: "value").
 #' @param climatology_period Length-2 character vector with start and end dates
 #'   (inclusive) for the fixed long-term climatology period, e.g.,
 #'   c("1981-01-01","2010-12-31"). Defaults to Hobday-style 30-year period if
@@ -22,20 +18,18 @@
 #'   event (default: 5).
 #' @param cold_spells Logical; if TRUE, detect cold-spells (events below the
 #'   threshold) instead of heatwaves (default: FALSE).
-#' @param category Logical; if TRUE, also compute event categories per Hobday
-#'   et al. (2018) on the detected events (default: TRUE).
 #' @param ... Additional arguments passed to heatwaveR::ts2clm() or
 #'   heatwaveR::detect_event().
 #'
 #' @return A list with class "rare_heatwaves" containing:
-#'   - data: a data.frame with the full time series, seasonal climatology,
-#'     threshold, and boolean indicators for threshold and event criteria
-#'     (column names follow heatwaveR, but include a convenience column
-#'     `is_event`).
-#'   - events: a data.frame summarising detected events (start, peak, end,
-#'     duration, intensities, rates, etc.).
-#'   - params: a list of key parameters used (pctile, min_duration,
-#'     climatology_period, cold_spells, category).
+#'   \describe{
+#'     \item{data}{A data.frame with the full time series, seasonal climatology,
+#'       threshold, and event indicators (follows heatwaveR column naming conventions).}
+#'     \item{events}{A data.frame summarising detected events (start, peak, end,
+#'       duration, intensities, rates, etc.).}
+#'     \item{params}{A list of key parameters used: pctile, min_duration,
+#'       climatology_period, and cold_spells.}
+#'   }
 #'
 #' @details
 #' This function uses heatwaveR::ts2clm() to compute a seasonal climatology and a
@@ -45,25 +39,16 @@
 #' function to ensure meaningful climatologies and durations in days.
 #'
 #' @references
-#' Hobday, A. J., Oliver, E. C. J., Sen Gupta, A., Benthuysen, J. A., Burrows,
-#' M. T., Donat, M. G., Holbrook, N. J., Moore, P. J., Thomsen, M. S., Wernberg,
-#' T., & Smale, D. A. (2016). A hierarchical approach to defining marine
-#' heatwaves. Progress in Oceanography, 141, 227–238.
-#'
-#' Hobday, A. J., Oliver, E. C. J., Sen Gupta, A., Benthuysen, J. A., Burrows,
-#' M. T., Donat, M. G., Holbrook, N. J., Moore, P. J., Thomsen, M. S., Wernberg,
-#' T., & Smale, D. A. (2018). Categorizing and naming marine heatwaves.
-#' Oceanography, 31(2), 162–173.
+#' \insertAllCited{}
 #'
 #' @examples
 #' \dontrun{
-#'   # Example with Annapolis data, use the first 10 years for climatology
+#'   # Example with Annapolis data
 #'   data(Annapolis)
 #'   summary(Annapolis)
 #'
 #'   # Detect heatwaves
 #'   hw <- rare_heatwaves(Annapolis, date_col = "date", value_col = "tmax",
-#'                        climatology_period = c("1995-01-01", "2004-12-31"),
 #'                        cold_spells = FALSE,
 #'                        pctile = 90, min_duration = 5)
 #'
@@ -76,7 +61,6 @@
 #'
 #'   # Detect cold spells
 #'   cs <- rare_heatwaves(Annapolis, date_col = "date", value_col = "tmax",
-#'                     climatology_period = c("1995-01-01", "2004-12-31"),
 #'                     cold_spells = TRUE,
 #'                     pctile = 10, min_duration = 5)
 #'
@@ -142,7 +126,6 @@ rare_heatwaves <- function(data,
   clim_df <- do.call(heatwaveR::ts2clm, ts2_args)
   # Detect events (heatwaves by default; cold_spells flips sense)
   # Normalize column names in the climatology to heatwaveR defaults to avoid NSE issues.
-  # clim_df <- clim#$climatology
   nm <- names(clim_df)
   # Ensure time column 't'
   if (!("t" %in% nm)) {
@@ -173,10 +156,6 @@ rare_heatwaves <- function(data,
     coldSpells = cold_spells
   ), extra_args)
   ev <- do.call(heatwaveR::detect_event, detect_args)
-  # # Optionally add categories
-  # if (isTRUE(category)) {
-  #   ev <- heatwaveR::category(ev)
-  # }
   # Convenience: boolean event flag on full series
   dat <- ev$climatology
   if (!"event" %in% names(dat) && "event" %in% names(ev$climatology)) {
@@ -189,8 +168,7 @@ rare_heatwaves <- function(data,
     params = list(pctile = pctile,
                   min_duration = min_duration,
                   climatology_period = climatology_period,
-                  cold_spells = cold_spells,
-                  category = category)
+                  cold_spells = cold_spells)
   )
   class(res) <- c("rare_heatwaves", class(res))
   res
