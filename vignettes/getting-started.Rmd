@@ -250,10 +250,11 @@ ggplot(Annapolis, aes(x = date, y = tmax)) +
     labs(x = "Date", y = "Maximum temperature (°C)")
 ```
 
+
 ### Residual-based anomalies
 
 We can detect anomalies in seasonal time series by first removing the trend and seasonal components. 
-The function `rare_residuals()` supports seasonal decomposition via STL (seasonal time series decomposition using locally weighted regression, loess).
+The function `rare_residuals()` supports seasonal decomposition via STL (seasonal time series decomposition using loess), then applies the isolation forest and DBSCAN to detect anomalies in residuals.
 
 ```{r}
 # Convert to ts object (frequency = 365 for daily data)
@@ -274,7 +275,7 @@ res_tmax <- rare_residuals(tmax_ts,
 ```
 
 Visualize the detected anomalies (Figure \@ref(fig:raretmax)).
-The plot shows the positive anomalies are often represented not by the highest temperatures but by unusually warm days in a spring, while the negative anomalies are often the lowest temperatures observed in Annapolis.
+The plot shows the positive anomalies are often represented not by the highest temperatures but by unusually warm days in spring, while the negative anomalies are often the lowest temperatures observed in Annapolis.
 
 ```{r}
 #| label: raretmax
@@ -291,7 +292,7 @@ res_tmax$data %>%
   scale_color_manual(values = c("positive" = "tomato", "negative" = "cornflowerblue"))
 ```
 
-We can also examine anomalous temperatures:
+We can also export anomalous temperatures to further examine them:
 
 ```{r}
 # Extract anomalous months
@@ -305,7 +306,8 @@ anomalous_tmax <- res_tmax$data %>%
 head(anomalous_tmax, 10)
 ```
 
-Visualize the seasonal component and residuals (Figure \@ref(fig:stltmax)):
+Visualize the trend-seasonal component and residuals (Figure \@ref(fig:stltmax)).
+The residual plot should be centered around zero and show as little patterns as possible, indicating that the STL decomposition has effectively removed the trend and seasonal patterns.
 
 ```{r}
 #| label: stltmax
@@ -397,6 +399,7 @@ ggplot(seasonal_anom, aes(x = year, y = mean_anomaly, color = season)) +
     theme(legend.position = "none")
 ```
 
+
 ### Heatwave-type events
 
 The `rare_heatwaves()` function provides a wrapper around the `heatwaveR` package to detect discrete, prolonged high- or low-temperature events.
@@ -409,7 +412,7 @@ Detect heatwaves in the Annapolis temperature data:
 hw <- rare_heatwaves(Annapolis, 
                      date_col = "date", 
                      value_col = "tmax",
-                     climatology_period = c("1995-01-01", "2024-12-31"),
+                     climatology_period = c("1995-01-01", "2024-12-30"),
                      pctile = 90,
                      min_duration = 5)
 
@@ -453,7 +456,7 @@ We can also detect cold spells by setting `cold_spells = TRUE`:
 cs <- rare_heatwaves(Annapolis, 
                      date_col = "date", 
                      value_col = "tmax",
-                     climatology_period = c("1995-01-01", "2024-12-31"),
+                     climatology_period = c("1995-01-01", "2024-12-30"),
                      pctile = 10,
                      min_duration = 5,
                      cold_spells = TRUE)
