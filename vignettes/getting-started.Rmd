@@ -239,47 +239,33 @@ head(Annapolis)
 summary(Annapolis)
 ```
 
-Visualize the temperature time series (Figure \@ref(fig:annapolistemp)).
+Visualize the temperature time series (Figure \@ref(fig:annapolistmax)).
 
 ```{r}
-#| label: annapolistemp
+#| label: annapolistmax
 #| fig-cap: "Daily maximum temperature in Annapolis, Maryland (1995-2024)."
 
-p1 <- ggplot(Annapolis, aes(x = date, y = tmax)) +
+ggplot(Annapolis, aes(x = date, y = tmax)) +
     geom_line(color = "gray50", linewidth = 0.3) +
     labs(x = "Date", y = "Maximum temperature (°C)")
-
-p2 <- ggplot(Annapolis, aes(x = date, y = pcp)) +
-    geom_line(color = "cornflowerblue", linewidth = 0.3) +
-    labs(x = "Date", y = "Precipitation (mm)")
-
-# Combine plots
-print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
 ```
 
 ### Residual-based anomalies
 
 We can detect anomalies in seasonal time series by first removing the trend and seasonal components. 
-The function `rare_residuals()` supports seasonal decomposition via STL (seasonal time series decomposition using loess).
+The function `rare_residuals()` supports seasonal decomposition via STL (seasonal time series decomposition using locally weighted regression, loess).
 
 ```{r}
 # Convert to ts object (frequency = 365 for daily data)
 tmax_ts <- ts(Annapolis$tmax, 
               start = c(1995, 1, 1), 
               frequency = 365)
-pcp_ts <- ts(Annapolis$pcp, 
-             start = c(1995, 1, 1), 
-             frequency = 365)
-```
 
-Now detect anomalies using `rare_residuals()` with STL decomposition:
-
-```{r}
 # Set seed for reproducibility
 set.seed(456)
 
 # Detect anomalies in monthly temperature
-res_temp <- rare_residuals(tmax_ts, 
+res_tmax <- rare_residuals(tmax_ts, 
                            seasonal = TRUE, 
                            period = frequency(tmax_ts),
                            stl_args = list(l.window = 365 * 2 + 1),
@@ -287,14 +273,14 @@ res_temp <- rare_residuals(tmax_ts,
                            iforest_args = list(ntrees = 100, threshold = 0.6))
 ```
 
-Visualize the detected anomalies (Figure \@ref(fig:raretemp)).
+Visualize the detected anomalies (Figure \@ref(fig:raretmax)).
 The plot shows the positive anomalies are often represented not by the highest temperatures but by unusually warm days in a spring, while the negative anomalies are often the lowest temperatures observed in Annapolis.
 
 ```{r}
-#| label: raretemp
+#| label: raretmax
 #| fig-cap: "Anomalies detected in daily maximum temperature using isolation forest."
 
-res_temp$data %>%
+res_tmax$data %>%
   mutate(type = ifelse(residual > 0, "positive", "negative")) %>%
   ggplot(aes(x = time, y = value)) +
   geom_line(color = "gray50") +
@@ -309,7 +295,7 @@ We can also examine anomalous temperatures:
 
 ```{r}
 # Extract anomalous months
-anomalous_tmax <- res_temp$data %>%
+anomalous_tmax <- res_tmax$data %>%
   # Replace time with the Date format (instead of decimal year)
   mutate(time = Annapolis$date) %>%
   filter(is_anomaly_iforest) %>%
@@ -319,19 +305,19 @@ anomalous_tmax <- res_temp$data %>%
 head(anomalous_tmax, 10)
 ```
 
-Visualize the seasonal component and residuals (Figure \@ref(fig:stltemp)):
+Visualize the seasonal component and residuals (Figure \@ref(fig:stltmax)):
 
 ```{r}
-#| label: stltemp
+#| label: stltmax
 #| fig-cap: "STL decomposition components for daily maximum temperature."
 
 # Create a data frame with STL components
-p1 <- ggplot(res_temp$data, aes(x = time, y = value - residual)) +
+p1 <- ggplot(res_tmax$data, aes(x = time, y = value - residual)) +
     geom_line() +
     labs(title = "Trend + Seasonal components",
          x = "Year", y = "Temperature (°C)")
 
-p2 <- ggplot(res_temp$data, aes(x = time, y = residual)) +
+p2 <- ggplot(res_tmax$data, aes(x = time, y = residual)) +
     geom_line() +
     geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
     labs(title = "Residuals after STL",

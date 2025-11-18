@@ -49,7 +49,7 @@ table(result$is_anomaly)
 
 ## Authors
 
-- **Vyacheslav Lyubchich** (Maintainer) - [ORCID: 0000-0001-7936-4285](https://orcid.org/0000-0001-7936-4285)
+- **Vyacheslav Lyubchich** (maintainer) - [ORCID: 0000-0001-7936-4285](https://orcid.org/0000-0001-7936-4285)
 - **Geneviève Nesslage** - [ORCID: 0000-0003-1770-6803](https://orcid.org/0000-0003-1770-6803)
 
 ## Contributing
