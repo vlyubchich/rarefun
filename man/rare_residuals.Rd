@@ -2,7 +2,7 @@
 % Please edit documentation in R/rare_residuals.R
 \name{rare_residuals}
 \alias{rare_residuals}
-\title{Detect Rare Events and Seasonality Shifts in Time Series Residuals}
+\title{Detect Rare Events in Time Series Residuals}
 \usage{
 rare_residuals(
   x,
@@ -10,7 +10,6 @@ rare_residuals(
   period = NULL,
   method = c("all", "iforest", "dbscan"),
   fourier_terms = 2,
-  seasonality_shift = seasonal,
   stl_args = list(),
   loess_args = list(),
   climatology_period = NULL,
@@ -40,13 +39,9 @@ estimated using spectral analysis.}
 \item{fourier_terms}{Integer, number of Fourier term pairs for seasonal modeling
 in Fourier smoothing (default: 2).}
 
-\item{seasonality_shift}{Logical, whether to compute Fourier decomposition for 
-estimating seasonality shift (e.g., early spring) by further comparing STL 
-and Fourier seasonal components (default: TRUE if \code{seasonal = TRUE}).}
-
 \item{stl_args}{A named list of arguments passed to \code{stats::stl()} for detrending and
 deseasonalizing \code{x}. Default: empty list \code{list()}.
-If not provided or empty, dynamic defaults favoring shift detection are used:
+If not provided or empty, dynamic defaults for stable seasonal decomposition are used:
 \code{s.window} ≈ nearest odd to max(7, 1.5 × period), \code{t.window} ≈ nearest odd to
 max(13, 1.5 × period), and \code{robust = TRUE}. If you provide a partial list,
 missing keys are filled with these dynamic defaults.}
@@ -83,12 +78,6 @@ A list containing:
         \item \code{score_iforest}: Anomaly scores from Isolation Forest.
         \item \code{score_dbscan}: Anomaly scores from DBSCAN.
       }
-    \item \code{seasonality_shift}: A list (if \code{seasonality_shift = TRUE} and
-      \code{seasonal = TRUE}) with:
-      \itemize{
-        \item \code{stl_seasonal}: Seasonal component from STL.
-        \item \code{fourier_seasonal}: Seasonal component from Fourier.
-      }
     \item \code{params}: A list of parameters used, including \code{period},
       \code{climatology_period} (if seasonal data with Date time index), and
       \code{method}.
@@ -99,8 +88,7 @@ This function filters a time series to compute residuals using STL decomposition
 (for seasonal data) or LOESS smoothing (for non-seasonal data) and identifies
 rare events (anomalies) in the residuals using Isolation Forest or DBSCAN. For
 seasonal time series, it applies STL decomposition and full-length Fourier
-smoothing separately, comparing their seasonality estimates to detect shifts
-(e.g., early spring) by analyzing differences in seasonal peaks.
+smoothing separately to model periodic structure and estimate residuals.
 }
 \details{
 For non-seasonal data, residuals are computed using LOESS with \code{time} as the
@@ -108,10 +96,7 @@ predictor. For seasonal data, residuals are computed twice: (1) using STL
 decomposition to extract the remainder component, and (2) using a full-length
 Fourier series to capture fixed periodicity. The STL seasonal component is
 smoothed using the \code{s.window} parameter (numeric for flexible smoothing, "periodic"
-for fixed seasonality) and further smoothed with LOESS for shift detection.
-Seasonality shifts are detected by comparing smoothed STL and Fourier seasonal
-components via cross-correlation to estimate the lag (in days) where peaks differ
-(e.g., early spring). Rare events are detected in STL (or LOESS for non-seasonal)
+for fixed seasonality). Rare events are detected in STL (or LOESS for non-seasonal)
 residuals using \code{rare_iforest} or \code{rare_dbscan}. The period is estimated via
 spectral analysis if not provided. Input validation prevents coercion errors.
 Separate argument lists (\code{stl_args}, \code{iforest_args}, \code{dbscan_args}) ensure
@@ -128,23 +113,14 @@ automatically treat the series as seasonal (i.e., set \code{seasonal = TRUE}). W
 }
 \examples{
 \dontrun{
-# Seasonal time series with Date index
-set.seed(123)
-dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 1500)
-value <- sin(2 * pi * seq_along(dates) / 365.25) + rnorm(1500, 0, 0.2)
-x <- data.frame(time = dates, value = value)
+# Annapolis data example (seasonal, Date index)
+data(Annapolis)
+x <- data.frame(time = Annapolis$date, value = Annapolis$tmax)
 result <- rare_residuals(x, seasonal = TRUE, period = 365.25, method = "all",
 iforest_args = list(ntrees = 100))
 plot(result$data$time, result$data$value, type = "l", main = "Time Series")
 points(result$data$time[result$data$is_anomaly_iforest],
        result$data$value[result$data$is_anomaly_iforest], col = "red", pch = 19)
-cat("Seasonality shift:", result$seasonality_shift$lag, "\n")
-
-# Plot seasonal components
-plot(result$data$time, result$seasonality_shift$stl_seasonal, type = "l",
-     col = "blue", main = "Seasonal Components")
-lines(result$data$time, result$seasonality_shift$fourier_seasonal, col = "red")
-legend("topright", c("STL", "Fourier"), col = c("blue", "red"), lty = 1)
 
 # Classic data example (ts input)
 result_AirPassengers <- rare_residuals(AirPassengers,

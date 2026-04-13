@@ -1,11 +1,10 @@
-#' Detect Rare Events and Seasonality Shifts in Time Series Residuals
+#' Detect Rare Events in Time Series Residuals
 #'
 #' This function filters a time series to compute residuals using STL decomposition
 #' (for seasonal data) or LOESS smoothing (for non-seasonal data) and identifies
 #' rare events (anomalies) in the residuals using Isolation Forest or DBSCAN. For
 #' seasonal time series, it applies STL decomposition and full-length Fourier
-#' smoothing separately, comparing their seasonality estimates to detect shifts
-#' (e.g., early spring) by analyzing differences in seasonal peaks.
+#' smoothing separately to model periodic structure and estimate residuals.
 #'
 #' @param x A numeric vector (time series values), a univariate \code{ts} object, or
 #'   a data frame with columns \code{time} (numeric or Date) and \code{value} (numeric).
@@ -23,12 +22,9 @@
 #'   "dbscan", or "all" (default: "all").
 #' @param fourier_terms Integer, number of Fourier term pairs for seasonal modeling
 #'   in Fourier smoothing (default: 2).
-#' @param seasonality_shift Logical, whether to compute Fourier decomposition for
-#'   estimating seasonality shift (e.g., early spring) by further comparing STL
-#'   and Fourier seasonal components (default: TRUE if \code{seasonal = TRUE}).
 #' @param stl_args A named list of arguments passed to \code{stats::stl()} for detrending and
 #'    deseasonalizing \code{x}. Default: empty list \code{list()}.
-#'    If not provided or empty, dynamic defaults favoring shift detection are used:
+#'    If not provided or empty, dynamic defaults for stable seasonal decomposition are used:
 #'    \code{s.window} ≈ nearest odd to max(7, 1.5 × period), \code{t.window} ≈ nearest odd to
 #'    max(13, 1.5 × period), and \code{robust = TRUE}. If you provide a partial list,
 #'    missing keys are filled with these dynamic defaults.
@@ -59,12 +55,6 @@
 #'         \item \code{score_iforest}: Anomaly scores from Isolation Forest.
 #'         \item \code{score_dbscan}: Anomaly scores from DBSCAN.
 #'       }
-#'     \item \code{seasonality_shift}: A list (if \code{seasonality_shift = TRUE} and
-#'       \code{seasonal = TRUE}) with:
-#'       \itemize{
-#'         \item \code{stl_seasonal}: Seasonal component from STL.
-#'         \item \code{fourier_seasonal}: Seasonal component from Fourier.
-#'       }
 #'     \item \code{params}: A list of parameters used, including \code{period},
 #'       \code{climatology_period} (if seasonal data with Date time index), and
 #'       \code{method}.
@@ -75,10 +65,7 @@
 #' decomposition to extract the remainder component, and (2) using a full-length
 #' Fourier series to capture fixed periodicity. The STL seasonal component is
 #' smoothed using the \code{s.window} parameter (numeric for flexible smoothing, "periodic"
-#' for fixed seasonality) and further smoothed with LOESS for shift detection.
-#' Seasonality shifts are detected by comparing smoothed STL and Fourier seasonal
-#' components via cross-correlation to estimate the lag (in days) where peaks differ
-#' (e.g., early spring). Rare events are detected in STL (or LOESS for non-seasonal)
+#' for fixed seasonality). Rare events are detected in STL (or LOESS for non-seasonal)
 #' residuals using \code{rare_iforest} or \code{rare_dbscan}. The period is estimated via
 #' spectral analysis if not provided. Input validation prevents coercion errors.
 #' Separate argument lists (\code{stl_args}, \code{iforest_args}, \code{dbscan_args}) ensure
@@ -103,13 +90,6 @@
 #' plot(result$data$time, result$data$value, type = "l", main = "Time Series")
 #' points(result$data$time[result$data$is_anomaly_iforest],
 #'        result$data$value[result$data$is_anomaly_iforest], col = "red", pch = 19)
-#' cat("Seasonality shift:", result$seasonality_shift$lag, "\n")
-#'
-#' # Plot seasonal components
-#' plot(result$data$time[1:1000], result$seasonality_shift$stl_seasonal[1:1000], type = "l",
-#'      col = "blue", main = "Seasonal Components")
-#' lines(result$data$time[1:1000], result$seasonality_shift$fourier_seasonal[1:1000], col = "red")
-#' legend("topright", c("STL", "Fourier"), col = c("blue", "red"), lty = 1)
 #'
 #' # Classic data example (ts input)
 #' result_AirPassengers <- rare_residuals(AirPassengers,
@@ -128,13 +108,12 @@
 #'    theme_minimal()
 #' }
 #' @seealso \code{\link{rare_iforest}}, \code{\link{rare_dbscan}}, \code{\link[stats]{stl}}
-#' @importFrom stats loess na.pass predict spec.pgram lm ccf stl ts
+#' @importFrom stats loess na.pass predict spec.pgram lm stl ts
 #' @export
 #'
 rare_residuals <- function(x, seasonal = FALSE, period = NULL,
                            method = c("all", "iforest", "dbscan"),
                            fourier_terms = 2,
-                           seasonality_shift = seasonal,
                            stl_args = list(),
                            loess_args = list(),
                            climatology_period = NULL,
@@ -186,10 +165,6 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
         stop("`fourier_terms` must be a positive integer.")
     }
     fourier_terms <- as.integer(fourier_terms)
-    if (!is.logical(seasonality_shift)) {
-        stop("`seasonality_shift` must be logical (TRUE or FALSE).")
-    }
-
     # Check package availability
     if (method %in% c("iforest", "all") && !requireNamespace("isotree", quietly = TRUE)) {
         stop("Package 'isotree' is required for Isolation Forest. Install it using install.packages('isotree').")
@@ -208,7 +183,6 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
         ts_freq <- stats::frequency(original_ts)
         if (is.finite(ts_freq) && ts_freq > 1 && !isTRUE(seasonal)) {
             seasonal <- TRUE
-            if (missing(seasonality_shift)) seasonality_shift <- TRUE
             message("Detected 'ts' with frequency > 1; setting seasonal = TRUE.")
         }
     }
@@ -255,7 +229,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     if (seasonal) {
         # STL decomposition for seasonal data
         ts_data <- stats::ts(value, frequency = period)
-        # Dynamic defaults favoring shift detection (flexible seasonality)
+        # Dynamic defaults for stable seasonal decomposition
         nearest_odd <- function(z, min_val) {
             z <- as.integer(round(z))
             if (z < min_val) z <- min_val
@@ -324,7 +298,6 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
             fourier_fitted <- stats::predict(fourier_fit)
         }
         residual_fourier <- value - fourier_fitted
-        fourier_seasonal <- fourier_fitted
     } else {
         # LOESS for non-seasonal data
         loess_args_mod <- loess_args
@@ -339,17 +312,6 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
         loess_fitted <- stats::predict(loess_fit)
         residual <- value - loess_fitted
         residual_fourier <- rep(NA, n)
-        fourier_fitted <- rep(NA, n)
-        fourier_seasonal <- NULL
-    }
-
-    # Seasonality shift detection (for seasonal data)
-    seasonality_shift_result <- NULL
-    if (seasonal && seasonality_shift) {
-        seasonality_shift_result <- list(
-            stl_seasonal = stl_seasonal,
-            fourier_seasonal = fourier_seasonal
-        )
     }
 
     # Prepare output data frame
@@ -388,7 +350,6 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
 
     return(list(
         data = output,
-        seasonality_shift = seasonality_shift_result,
         params = params
     ))
 }
