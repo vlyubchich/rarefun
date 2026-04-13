@@ -146,12 +146,12 @@ mcc <- function(x,
   x_name <- deparse(substitute(x))
   y_name <- deparse(substitute(y))
 
-  # --- Internal helper function to compute MCC from a matrix ---
-  calculate_mcc_from_matrix <- function(mat) {
-    TP <- as.numeric(mat[1, 1])
-    FN <- as.numeric(mat[1, 2])
-    FP <- as.numeric(mat[2, 1])
-    TN <- as.numeric(mat[2, 2])
+  # --- Internal helper function to compute MCC from counts ---
+  calculate_mcc_from_counts <- function(counts) {
+    TP <- as.numeric(counts[1])
+    FN <- as.numeric(counts[2])
+    FP <- as.numeric(counts[3])
+    TN <- as.numeric(counts[4])
     numerator <- TP * TN - FP * FN
     denominator_parts <- c(TP + FP, TP + FN, TN + FP, TN + FN)
     if (any(denominator_parts == 0)) {
@@ -162,12 +162,20 @@ mcc <- function(x,
     numerator / denominator
   }
 
-  # --- Internal helper function to compute MCC for bootstrapping ---
-  calculate_mcc <- function(data, ordered_levels, xname, yname) {
-    mat <- table(setNames(list(factor(c(data[, 1], ordered_levels, rev(ordered_levels)), levels = ordered_levels),
-                               factor(c(data[, 2], ordered_levels, ordered_levels), levels = ordered_levels)),
-                          c(xname, yname))) - 1
-    calculate_mcc_from_matrix(mat)
+  # --- Internal helper functions for compact binary encoding ---
+  encode_pair_codes <- function(x_binary, y_binary) {
+    4L - (2L * as.integer(x_binary)) - as.integer(y_binary)
+  }
+
+  build_confusion_matrix <- function(counts, ordered_levels, xname, yname) {
+    dimnames_list <- list(ordered_levels, ordered_levels)
+    names(dimnames_list) <- c(xname, yname)
+    matrix(counts, nrow = 2, byrow = TRUE, dimnames = dimnames_list)
+  }
+
+  calculate_bootstrap_mcc <- function(data) {
+    counts <- tabulate(as.integer(data), nbins = 4L)
+    calculate_mcc_from_counts(counts)
   }
 
   # --- Input Validation ---
@@ -234,9 +242,11 @@ mcc <- function(x,
 
   # --- Create Confusion Matrix ---
   ordered_levels <- c(positive_class, negative_class)
-  conf_matrix <- table(setNames(list(factor(c(x, ordered_levels, rev(ordered_levels)), levels = ordered_levels),
-                                     factor(c(y, ordered_levels, ordered_levels), levels = ordered_levels)),
-                                c(x_name, y_name))) - 1
+  x_binary <- as.character(x) == positive_class
+  y_binary <- as.character(y) == positive_class
+  pair_codes <- encode_pair_codes(x_binary, y_binary)
+  conf_counts <- tabulate(pair_codes, nbins = 4L)
+  conf_matrix <- build_confusion_matrix(conf_counts, ordered_levels, x_name, y_name)
 
   if (any(rowSums(conf_matrix) == 0) || any(colSums(conf_matrix) == 0)) {
       warning("The confusion matrix has a row or column with all zeros. MCC is undefined and returned as NA.")
@@ -256,7 +266,7 @@ mcc <- function(x,
   }
 
   # --- Calculate Observed MCC and Chi-Square ---
-  observed_mcc <- calculate_mcc_from_matrix(conf_matrix)
+  observed_mcc <- calculate_mcc_from_counts(conf_counts)
   chi_test <- chisq.test(conf_matrix, correct = TRUE)
 
   # --- Bootstrap Test for p-value ---
@@ -264,20 +274,22 @@ mcc <- function(x,
   if (bootstrap_reps > 0) {
     if (ts) {
       # Time series bootstrap using the tsboot function from the boot package
-      data_matrix <- cbind(as.character(x), as.character(y))
-      boot_out <- boot::tsboot(data_matrix, statistic = calculate_mcc, ordered_levels = ordered_levels,
-                               xname = x_name, yname = y_name,
+      boot_out <- boot::tsboot(pair_codes, statistic = calculate_bootstrap_mcc,
                                R = bootstrap_reps, l = l, sim = sim, ...)
       mcc_boot_dist <- boot_out$t
     } else {
-      # Standard bootstrap for non-time series data
-      mcc_boot_dist <- replicate(bootstrap_reps, {
-        i <- sample(seq_along(y), replace = TRUE)
-        boot_matrix <- table(setNames(list(factor(c(x[i], ordered_levels, rev(ordered_levels)), levels = ordered_levels),
-                                           factor(c(y[i], ordered_levels, ordered_levels), levels = ordered_levels)),
-                                      c(x_name, y_name))) - 1
-        calculate_mcc_from_matrix(boot_matrix)
-      })
+      # Standard bootstrap for non-time series data: resample the 4 pair categories directly.
+      boot_counts <- rmultinom(bootstrap_reps,
+                               size = length(pair_codes),
+                               prob = conf_counts / sum(conf_counts))
+      TP <- boot_counts[1, ]
+      FN <- boot_counts[2, ]
+      FP <- boot_counts[3, ]
+      TN <- boot_counts[4, ]
+      denominator <- sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
+      mcc_boot_dist <- ifelse(denominator == 0,
+                              0,
+                              (TP * TN - FP * FN) / denominator)
     }
 
     # Calculate the two-tailed p-value
