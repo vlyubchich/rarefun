@@ -129,7 +129,7 @@
 #' print(paste("Bootstrap CI:",
 #'    paste(round(mcc_ts$mcc_bootstrap_ci, 3), collapse = " to ")))
 #'
-#' @importFrom stats chisq.test quantile
+#' @importFrom stats chisq.test quantile rmultinom
 #' @importFrom boot tsboot
 #' @export
 #'

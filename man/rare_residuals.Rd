@@ -104,7 +104,7 @@ function-specific parameters are passed correctly.
 
 For seasonal data with Date-based time indices, the \code{climatology_period} parameter
 allows specification of a reference period for estimating the Fourier seasonal cycle.
-The Fourier model is fitted using only data within this period. This is useful for 
+The Fourier model is fitted using only data within this period. This is useful for
 detecting changes in seasonality patterns relative to a baseline climatology.
 
 If \code{x} is a univariate \code{ts} object with \code{frequency(x) > 1}, the function will
