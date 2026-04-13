@@ -42,8 +42,8 @@ in Fourier smoothing (default: 2).}
 \item{stl_args}{A named list of arguments passed to \code{stats::stl()} for detrending and
 deseasonalizing \code{x}. Default: empty list \code{list()}.
 If not provided or empty, dynamic defaults for stable seasonal decomposition are used:
-\code{s.window} ≈ nearest odd to max(7, 1.5 × period), \code{t.window} ≈ nearest odd to
-max(13, 1.5 × period), and \code{robust = TRUE}. If you provide a partial list,
+\code{s.window} is the nearest odd to  \code{max(7, 1.5 * period)}, \code{t.window} is the nearest odd to
+\code{max(13, 1.5 * period)}, and \code{robust = TRUE}. If you provide a partial list,
 missing keys are filled with these dynamic defaults.}
 
 \item{loess_args}{A named list of arguments passed to \code{stats::loess()} for

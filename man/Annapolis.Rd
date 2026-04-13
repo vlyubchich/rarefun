@@ -15,7 +15,7 @@ A tibble (data frame) with the following columns:
 \source{
 Thornton, M. M., Shrestha, R., Wei, Y., Thornton, P. E., & Kao, S.-C. (2022).
 Daymet: Daily Surface Weather Data on a 1-km Grid for North America, Version 4 R1 (Version 4.1).
-ORNL Distributed Active Archive Center. \url{https://doi.org/10.3334/ORNLDAAC/2129} Date Accessed: 2025-11-18.
+ORNL Distributed Active Archive Center. \doi{10.3334/ORNLDAAC/2129} Date Accessed: 2025-11-18.
 }
 \usage{
 Annapolis
