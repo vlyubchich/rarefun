@@ -23,9 +23,9 @@
 #'   "dbscan", or "all" (default: "all").
 #' @param fourier_terms Integer, number of Fourier term pairs for seasonal modeling
 #'   in Fourier smoothing (default: 2).
-#' @param seasonality_shift Logical, whether to compute seasonality shift (e.g., early
-#'   spring) by comparing STL and Fourier seasonal components (default: TRUE if
-#'   \code{seasonal = TRUE}).
+#' @param seasonality_shift Logical, whether to compute Fourier decomposition for
+#'   estimating seasonality shift (e.g., early spring) by further comparing STL
+#'   and Fourier seasonal components (default: TRUE if \code{seasonal = TRUE}).
 #' @param stl_args A named list of arguments passed to \code{stats::stl()} for detrending and
 #'    deseasonalizing \code{x}. Default: empty list \code{list()}.
 #'    If not provided or empty, dynamic defaults favoring shift detection are used:
@@ -37,6 +37,11 @@
 #'   defaults \code{span = 0.75} and \code{degree = 1} are used. If you provide a
 #'   partial list, missing keys are filled with these defaults. The formula is
 #'   set to \code{value ~ time} unless you explicitly provide \code{formula}.
+#' @param climatology_period Length-2 character vector with start and end dates
+#'   (inclusive) for the climatology period used to estimate Fourier decomposition
+#'   in seasonal data, e.g., c("1981-01-01","2010-12-31"). Only used when
+#'   \code{seasonal = TRUE} and \code{time} is Date. Defaults to a 30-year period
+#'   if available in the data; otherwise the full range of available dates is used.
 #' @param iforest_args A named list of arguments passed to \code{rare_iforest()} (e.g.,
 #'   \code{list(ntrees = 200)}). Default: \code{list()}.
 #' @param dbscan_args A named list of arguments passed to \code{rare_dbscan()} (e.g.,
@@ -57,11 +62,12 @@
 #'     \item \code{seasonality_shift}: A list (if \code{seasonality_shift = TRUE} and
 #'       \code{seasonal = TRUE}) with:
 #'       \itemize{
-#'         \item \code{lag}: Estimated time shift (positive if STL peaks
-#'           earlier than Fourier, e.g., early spring).
 #'         \item \code{stl_seasonal}: Seasonal component from STL.
 #'         \item \code{fourier_seasonal}: Seasonal component from Fourier.
 #'       }
+#'     \item \code{params}: A list of parameters used, including \code{period},
+#'       \code{climatology_period} (if seasonal data with Date time index), and
+#'       \code{method}.
 #'   }
 #' @details
 #' For non-seasonal data, residuals are computed using LOESS with \code{time} as the
@@ -78,17 +84,20 @@
 #' Separate argument lists (\code{stl_args}, \code{iforest_args}, \code{dbscan_args}) ensure
 #' function-specific parameters are passed correctly.
 #'
+#' For seasonal data with Date-based time indices, the \code{climatology_period} parameter
+#' allows specification of a reference period for estimating the Fourier seasonal cycle.
+#' The Fourier model is fitted using only data within this period. This is useful for
+#' detecting changes in seasonality patterns relative to a baseline climatology.
+#'
 #' If \code{x} is a univariate \code{ts} object with \code{frequency(x) > 1}, the function will
 #' automatically treat the series as seasonal (i.e., set \code{seasonal = TRUE}). When
 #' \code{period} is not provided, \code{frequency(x)} will be used.
 #'
 #' @examples
 #' \dontrun{
-#' # Seasonal time series with Date index
-#' set.seed(123)
-#' dates <- seq(as.Date("2020-01-01"), by = "day", length.out = 1500)
-#' value <- sin(2 * pi * seq_along(dates) / 365.25) + rnorm(1500, 0, 0.2)
-#' x <- data.frame(time = dates, value = value)
+#' # Annapolis data example (seasonal, Date index)
+#' data(Annapolis)
+#' x <- data.frame(time = Annapolis$date, value = Annapolis$tmax)
 #' result <- rare_residuals(x, seasonal = TRUE, period = 365.25, method = "all",
 #' iforest_args = list(ntrees = 100))
 #' plot(result$data$time, result$data$value, type = "l", main = "Time Series")
@@ -97,9 +106,9 @@
 #' cat("Seasonality shift:", result$seasonality_shift$lag, "\n")
 #'
 #' # Plot seasonal components
-#' plot(result$data$time, result$seasonality_shift$stl_seasonal, type = "l",
+#' plot(result$data$time[1:1000], result$seasonality_shift$stl_seasonal[1:1000], type = "l",
 #'      col = "blue", main = "Seasonal Components")
-#' lines(result$data$time, result$seasonality_shift$fourier_seasonal, col = "red")
+#' lines(result$data$time[1:1000], result$seasonality_shift$fourier_seasonal[1:1000], col = "red")
 #' legend("topright", c("STL", "Fourier"), col = c("blue", "red"), lty = 1)
 #'
 #' # Classic data example (ts input)
@@ -128,6 +137,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
                            seasonality_shift = seasonal,
                            stl_args = list(),
                            loess_args = list(),
+                           climatology_period = NULL,
                            iforest_args = list(),
                            dbscan_args = list()) {
     # Input validation
@@ -216,6 +226,31 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
         }
     }
 
+    # Determine climatology period for Fourier decomposition (seasonal data only)
+    clim_indices <- NULL
+    if (seasonal && inherits(time, "Date")) {
+        # Default climatology period: prefer 30-year window if available, else full range
+        d_min <- min(time, na.rm = TRUE)
+        d_max <- max(time, na.rm = TRUE)
+        if (is.null(climatology_period)) {
+            start_year <- as.integer(format(d_min, "%Y"))
+            end_year <- as.integer(format(d_max, "%Y"))
+            if (end_year - start_year + 1 >= 30) {
+                climatology_period <- c(sprintf("%d-01-01", start_year), sprintf("%d-12-31", start_year + 29))
+            } else {
+                climatology_period <- c(as.character(d_min), as.character(d_max))
+            }
+        }
+        # Find indices within climatology period
+        clim_start <- as.Date(climatology_period[1])
+        clim_end <- as.Date(climatology_period[2])
+        clim_indices <- which(time >= clim_start & time <= clim_end)
+        if (length(clim_indices) == 0) {
+            warning("No data found in specified climatology_period. Using full time series for Fourier decomposition.")
+            clim_indices <- NULL
+        }
+    }
+
     # Smoothing and residual computation
     if (seasonal) {
         # STL decomposition for seasonal data
@@ -271,10 +306,23 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
             fourier[[paste0("cos", k)]] <- cos(omega * k)
         }
 
-        # Fourier smoothing of detrended data
-        fourier_data <- data.frame(value = value - stl_fit$time.series[, "trend"], fourier)
-        fourier_fit <- stats::lm(value ~ ., data = fourier_data)
-        fourier_fitted <- stats::predict(fourier_fit)
+        # Fourier smoothing: fit on climatology period (if specified), predict on full series
+        if (!is.null(clim_indices)) {
+            # Fit Fourier model on climatology period only
+            fourier_data_clim <- data.frame(
+                value = (value - stl_fit$time.series[, "trend"])[clim_indices],
+                fourier[clim_indices, , drop = FALSE]
+            )
+            fourier_fit <- stats::lm(value ~ ., data = fourier_data_clim)
+            # Predict on full time series
+            fourier_data_full <- data.frame(fourier)
+            fourier_fitted <- stats::predict(fourier_fit, newdata = fourier_data_full)
+        } else {
+            # Fit and predict on full time series
+            fourier_data <- data.frame(value = value - stl_fit$time.series[, "trend"], fourier)
+            fourier_fit <- stats::lm(value ~ ., data = fourier_data)
+            fourier_fitted <- stats::predict(fourier_fit)
+        }
         residual_fourier <- value - fourier_fitted
         fourier_seasonal <- fourier_fitted
     } else {
@@ -298,12 +346,7 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     # Seasonality shift detection (for seasonal data)
     seasonality_shift_result <- NULL
     if (seasonal && seasonality_shift) {
-        # Compute cross-correlation to estimate shift
-        ccf_result <- stats::ccf(as.vector(stl_seasonal), fourier_seasonal, lag.max = round(period / 2),
-                                 plot = FALSE, na.action = na.pass)
-        lag <- ccf_result$lag[which.max(abs(ccf_result$acf))]
         seasonality_shift_result <- list(
-            lag = lag,
             stl_seasonal = stl_seasonal,
             fourier_seasonal = fourier_seasonal
         )
@@ -335,8 +378,17 @@ rare_residuals <- function(x, seasonal = FALSE, period = NULL,
     }
 
     # Return results
+    params <- list(
+        period = if (seasonal) period else NA,
+        method = method
+    )
+    if (seasonal && inherits(time, "Date") && !is.null(climatology_period)) {
+        params$climatology_period <- climatology_period
+    }
+
     return(list(
         data = output,
-        seasonality_shift = seasonality_shift_result
+        seasonality_shift = seasonality_shift_result,
+        params = params
     ))
 }

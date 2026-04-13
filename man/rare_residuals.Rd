@@ -13,6 +13,7 @@ rare_residuals(
   seasonality_shift = seasonal,
   stl_args = list(),
   loess_args = list(),
+  climatology_period = NULL,
   iforest_args = list(),
   dbscan_args = list()
 )
@@ -39,9 +40,9 @@ estimated using spectral analysis.}
 \item{fourier_terms}{Integer, number of Fourier term pairs for seasonal modeling
 in Fourier smoothing (default: 2).}
 
-\item{seasonality_shift}{Logical, whether to compute seasonality shift (e.g., early
-spring) by comparing STL and Fourier seasonal components (default: TRUE if
-\code{seasonal = TRUE}).}
+\item{seasonality_shift}{Logical, whether to compute Fourier decomposition for 
+estimating seasonality shift (e.g., early spring) by further comparing STL 
+and Fourier seasonal components (default: TRUE if \code{seasonal = TRUE}).}
 
 \item{stl_args}{A named list of arguments passed to \code{stats::stl()} for detrending and
 deseasonalizing \code{x}. Default: empty list \code{list()}.
@@ -55,6 +56,12 @@ non-seasonal smoothing. Default: \code{list()}. If not provided or empty,
 defaults \code{span = 0.75} and \code{degree = 1} are used. If you provide a
 partial list, missing keys are filled with these defaults. The formula is
 set to \code{value ~ time} unless you explicitly provide \code{formula}.}
+
+\item{climatology_period}{Length-2 character vector with start and end dates
+(inclusive) for the climatology period used to estimate Fourier decomposition
+in seasonal data, e.g., c("1981-01-01","2010-12-31"). Only used when
+\code{seasonal = TRUE} and \code{time} is Date. Defaults to a 30-year period
+if available in the data; otherwise the full range of available dates is used.}
 
 \item{iforest_args}{A named list of arguments passed to \code{rare_iforest()} (e.g.,
 \code{list(ntrees = 200)}). Default: \code{list()}.}
@@ -79,11 +86,12 @@ A list containing:
     \item \code{seasonality_shift}: A list (if \code{seasonality_shift = TRUE} and
       \code{seasonal = TRUE}) with:
       \itemize{
-        \item \code{lag}: Estimated time shift (positive if STL peaks
-          earlier than Fourier, e.g., early spring).
         \item \code{stl_seasonal}: Seasonal component from STL.
         \item \code{fourier_seasonal}: Seasonal component from Fourier.
       }
+    \item \code{params}: A list of parameters used, including \code{period},
+      \code{climatology_period} (if seasonal data with Date time index), and
+      \code{method}.
   }
 }
 \description{
@@ -108,6 +116,11 @@ residuals using \code{rare_iforest} or \code{rare_dbscan}. The period is estimat
 spectral analysis if not provided. Input validation prevents coercion errors.
 Separate argument lists (\code{stl_args}, \code{iforest_args}, \code{dbscan_args}) ensure
 function-specific parameters are passed correctly.
+
+For seasonal data with Date-based time indices, the \code{climatology_period} parameter
+allows specification of a reference period for estimating the Fourier seasonal cycle.
+The Fourier model is fitted using only data within this period. This is useful for 
+detecting changes in seasonality patterns relative to a baseline climatology.
 
 If \code{x} is a univariate \code{ts} object with \code{frequency(x) > 1}, the function will
 automatically treat the series as seasonal (i.e., set \code{seasonal = TRUE}). When
