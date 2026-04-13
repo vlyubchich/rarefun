@@ -1,8 +1,10 @@
 # rarefun: Functions for Rare Events Analysis
 
+<!-- badges: start -->
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CRAN status](https://www.r-pkg.org/badges/version/rarefun)](https://CRAN.R-project.org/package=rarefun)
-[![Codecov test coverage](https://codecov.io/gh/vlyubchich/rarefun/graph/badge.svg)](https://app.codecov.io/gh/vlyubchich/rarefun)
+[![R CMD Check](https://github.com/vlyubchich/rarefun/actions/workflows/R-CMD-check/badge.svg)](https://github.com/vlyubchich/rarefun/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
 
 ## Overview
 
