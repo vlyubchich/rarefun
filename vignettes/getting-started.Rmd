@@ -79,7 +79,7 @@ par(mfrow = c(1, 1))
 ```
 
 **First, detect anomalies** in each time series using the function `rare_residuals()`, which removes smooth trends and identifies rare events in the residuals.
-Since the trends in the data are not very smooth, we will use a small span for the LOESS smoother, for the smooth to be more local.
+Since the trends in the data are not very smooth, we will use a small span for the locally weighted regression (loess) smoother, for the smooth to be more local.
 We use `ntrees = 100` for the isolation forest method to speed up the computation (increase `ntrees` for more consistent results).
 
 ```{r}
@@ -233,9 +233,9 @@ For seasonal time series, we can use the built-in `Annapolis` dataset, which con
 ```{r}
 # Load the Annapolis dataset
 data(Annapolis)
-head(Annapolis)
 
-# Quick summary
+# Quick summaries
+head(Annapolis)
 summary(Annapolis)
 ```
 
@@ -328,10 +328,19 @@ p2 <- ggplot(res_tmax$data, aes(x = time, y = residual)) +
 print(p1 + p2 + plot_layout(ncol = 1, axes = "collect"))
 ```
 
+
 ### Seasonality shifts
 
 Beyond isolated anomalies, we can look for shifts in seasonal patterns. 
 For example, we might want to detect whether certain years have systematically warmer or cooler temperatures than the long-term climatology.
+
+
+```{r}
+
+```
+
+
+
 
 Calculate annual anomalies relative to the long-term monthly climatology:
 
