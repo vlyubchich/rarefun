@@ -8,6 +8,9 @@
 ^\.gitignore$
 ^\.gitattributes$
 ^\.github$
+^\.C
+^\.quarto
+^\.vscode
 
 ^LICENSE\.md$
 
@@ -18,3 +21,7 @@
 # Ignore vignettes from the build
 ^vignettes$
 ^vignettes/
+
+# Ignore temporary manuscript workspace
+^pub$
+^pub/

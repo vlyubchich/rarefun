@@ -50,7 +50,8 @@ The rarefun package has been set up with the following structure:
 ### Other Directories
 - **data/**: For package datasets
 - **dev/**: Development scripts (excluded from package, not contained in build)
- - **inst/**: Installed files. We keep `REFERENCES.bib` here for Rdpack citations.
+- **inst/**: Installed files. We keep `REFERENCES.bib` here for Rdpack citations.
+- **pub/**: Temporary manuscript workspace for publication drafts (currently excluded from package build and Git tracking).
 
 ### Configuration Files
 - **rarefun.Rproj**: RStudio project file

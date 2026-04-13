@@ -20,11 +20,17 @@
 
 # RStudio files
 .Rproj.user/
+.C
+.quarto
+.vscode
 
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
 vignettes/*.R
+
+# temporary manuscript workspace
+pub/
 
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth
@@ -48,3 +54,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+/.quarto/
+**/*.quarto_ipynb

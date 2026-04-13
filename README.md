@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CRAN status](https://www.r-pkg.org/badges/version/rarefun)](https://CRAN.R-project.org/package=rarefun)
-[![R-CMD-check](https://github.com/vlyubchich/rarefun/actions/workflows/check-standard.yaml/badge.svg)](https://github.com/vlyubchich/rarefun/actions/workflows/check-standard.yaml)
+[![Codecov test coverage](https://codecov.io/gh/vlyubchich/rarefun/graph/badge.svg)](https://app.codecov.io/gh/vlyubchich/rarefun)
 
 ## Overview
 
