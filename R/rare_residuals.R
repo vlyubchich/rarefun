@@ -81,7 +81,7 @@
 #' \code{period} is not provided, \code{frequency(x)} will be used.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Annapolis data example (seasonal, Date index)
 #' data(Annapolis)
 #' x <- data.frame(time = Annapolis$date, value = Annapolis$tmax)
@@ -97,15 +97,18 @@
 #'                                       iforest_args = list(ntrees = 100,
 #'                                                           threshold = 0.6))
 #' # View results
-#' ggplot2::ggplot(result_AirPassengers$data, aes(x = time, y = value)) +
-#'    geom_line(color = "gray") +
-#'    geom_point(aes(color = is_anomaly_iforest)) +
-#'    labs(title = "Anomaly detection in AirPassengers using isolation forest",
-#'         x = "Time",
-#'         y = "Number of passengers",
-#'         color = "Anomaly status") +
-#'    scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
-#'    theme_minimal()
+#' if (requireNamespace("ggplot2", quietly = TRUE)) {
+#'   library(ggplot2)
+#'   ggplot2::ggplot(result_AirPassengers$data, aes(x = time, y = value)) +
+#'      geom_line(color = "gray") +
+#'      geom_point(aes(color = is_anomaly_iforest)) +
+#'      labs(title = "Anomaly detection in AirPassengers using isolation forest",
+#'           x = "Time",
+#'           y = "Number of passengers",
+#'           color = "Anomaly status") +
+#'      scale_color_manual(values = c("gray", "red"), labels = c("Normal", "Anomaly")) +
+#'      theme_minimal()
+#' }
 #' }
 #' @seealso \code{\link{rare_iforest}}, \code{\link{rare_dbscan}}, \code{\link[stats]{stl}}
 #' @importFrom stats loess na.pass predict spec.pgram lm stl ts

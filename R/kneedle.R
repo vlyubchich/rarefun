@@ -38,7 +38,7 @@
 #' \insertAllCited{}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Example with synthetic data
 #' x <- 1:10
 #' y <- c(1, 2, 3, 4, 10, 20, 30, 40, 50, 60)

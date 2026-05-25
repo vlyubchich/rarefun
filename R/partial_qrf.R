@@ -26,64 +26,61 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Example 1: Swiss
-#' library(dplyr)
-#' library(ggplot2)
+#' \donttest{
+#' if (requireNamespace("ranger", quietly = TRUE) &&
+#'     requireNamespace("ggplot2", quietly = TRUE)) {
+#'   library(ggplot2)
 #'
-#' # fit a quantile random forest
-#' qrf <- ranger::ranger(Examination ~ ., data = swiss, quantreg = TRUE, num.trees = 50)
+#'   # fit a quantile random forest
+#'   qrf <- ranger::ranger(Examination ~ ., data = swiss, quantreg = TRUE, num.trees = 10)
 #'
-#' # 1.1) a plot for one quantile
-#' partial_qrf(qrf, pred.var = "Agriculture", Q = 0.5) %>%
-#'     ggplot(aes(Agriculture, Examination)) +
-#'         geom_line()
+#'   # 1) a plot for one quantile
+#'   partial_qrf(qrf, pred.var = "Agriculture", Q = 0.5) |>
+#'       ggplot(aes(Agriculture, Examination)) +
+#'           geom_line()
 #'
-#' # 1.2) a plot for several quantiles, with decorations
-#' library(hrbrthemes)
-#' library(viridis)
-#' partial_qrf(qrf, pred.var = "Agriculture") %>%
-#'    ggplot(aes(Agriculture, Examination, group = Quantile, color = Quantile)) +
-#'        geom_line() +
-#'        scale_color_viridis(discrete = TRUE) +
-#'        theme_ipsum()
+#'   # 2) a plot for several quantiles, with color scale
+#'   if (requireNamespace("viridis", quietly = TRUE)) {
+#'     library(viridis)
+#'     partial_qrf(qrf, pred.var = "Agriculture") |>
+#'        ggplot(aes(Agriculture, Examination, group = Quantile, color = Quantile)) +
+#'            geom_line() +
+#'            scale_color_viridis(discrete = TRUE) +
+#'            theme_minimal()
+#'   }
 #'
-#' # 1.3) a plot for one quantile for 2 predictors (takes longer, so
-#' # save as an object, can also redefine pred.grid or decrease grid.resolution)
-#' df <- partial_qrf(qrf, pred.var = c("Agriculture", "Catholic"), Q = 0.5,
-#'     grid.resolution = 20)
-#' ggplot(df, aes(Agriculture, Catholic)) +
-#'     geom_tile(aes(fill = Examination)) +
-#'     scale_fill_viridis() +
-#'     theme_ipsum() +
-#'     labs(fill = "Median\nexamination")
+#'   # 3) a plot for one quantile for 2 predictors (use small grid.resolution to save time)
+#'   df <- partial_qrf(qrf, pred.var = c("Agriculture", "Catholic"), Q = 0.5,
+#'       grid.resolution = 5)
+#'   if (requireNamespace("viridis", quietly = TRUE)) {
+#'     ggplot(df, aes(Agriculture, Catholic)) +
+#'         geom_tile(aes(fill = Examination)) +
+#'         scale_fill_viridis() +
+#'         theme_minimal() +
+#'         labs(fill = "Median\nexamination")
+#'   }
 #'
-#'
-#' # 1.4) a plot for each variable
-#' # define a vector of variable names and desired quantiles
-#' varnames <- qrf$forest$independent.variable.names
-#' qs <- c(0.01, 0.025, 0.05)
-#' # save outputs in a list
-#' ddf <- lapply(varnames, function(vn) partial_qrf(qrf, pred.var = vn, Q = qs))
-#' # use your preferred plotting functions, e.g., ggplot2 with patchwork
-#' # for a common y-axis, get ranges
-#' yrange <- range(sapply(ddf, function(x) range(x[,2])))
-#' # then create a list of ggplots
-#' plist <- lapply(seq_along(varnames), function(vi) {
-#'     ggplot(ddf[[vi]], aes_string(x = varnames[vi], y = "Examination",
-#'         group = "Quantile", color = "Quantile")) +
-#'         geom_line() +
-#'         scale_color_viridis(discrete = TRUE) +
-#'         theme_ipsum(plot_margin = ggplot2::margin(10, 10, 10, 10)) +
-#'         ylim(yrange[1], yrange[2]) + theme(axis.title.y = element_blank())
-#' })
-#' # then organize the plots
-#' library(patchwork)
-#' pl <- wrap_plots(plist) + plot_layout(guides = "collect")
-#' pl
-#' # can stop here or continue grouping
-#' gpl <- patchwork::patchworkGrob(pl)
-#' gridExtra::grid.arrange(gpl, left = "Examination")
+#'   # 4) a plot for each predictor
+#'   varnames <- qrf$forest$independent.variable.names
+#'   qs <- c(0.05, 0.5, 0.95)
+#'   ddf <- lapply(varnames, function(vn) partial_qrf(qrf, pred.var = vn, Q = qs))
+#'   if (requireNamespace("viridis", quietly = TRUE) &&
+#'       requireNamespace("patchwork", quietly = TRUE)) {
+#'     library(viridis)
+#'     library(patchwork)
+#'     yrange <- range(sapply(ddf, function(x) range(x[, 2])))
+#'     plist <- lapply(seq_along(varnames), function(vi) {
+#'         ggplot(ddf[[vi]], aes(x = .data[[varnames[vi]]], y = Examination,
+#'             group = Quantile, color = Quantile)) +
+#'             geom_line() +
+#'             scale_color_viridis(discrete = TRUE) +
+#'             theme_minimal() +
+#'             ylim(yrange[1], yrange[2]) +
+#'             theme(axis.title.y = element_blank())
+#'     })
+#'     wrap_plots(plist) + plot_layout(guides = "collect")
+#'   }
+#' }
 #'}
 #'
 partial_qrf <- function(object, pred.var

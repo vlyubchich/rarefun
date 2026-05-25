@@ -42,7 +42,7 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Example: Quantile regression goodness-of-fit on swiss data
 #' # Select 30% of data for testing
 #' n <- nrow(swiss)

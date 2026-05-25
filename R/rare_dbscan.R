@@ -38,7 +38,7 @@
 #' k-nearest neighbor distances, and should be interpreted cautiously.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' set.seed(123)
 #' data <- matrix(rnorm(1000), nrow = 500)
 #' data[1:5, ] <- data[1:5, ] + 10  # Add some outliers

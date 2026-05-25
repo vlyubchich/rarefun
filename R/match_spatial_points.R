@@ -48,7 +48,6 @@
 #' @seealso \code{\link[geosphere]{distGeo}}, \code{\link[RANN]{nn2}}
 #'
 #' @examples
-#' \dontrun{
 #' # Example datasets
 #' Aa <- data.frame(
 #'   id = c("fish1", "fish2", "fish3"),
@@ -69,7 +68,6 @@
 #'
 #' # Apply maximum distance threshold
 #' match_spatial_points(Aa, Bb, max_dist = 2000)
-#' }
 #'
 #' @importFrom geosphere distGeo
 #' @importFrom RANN nn2

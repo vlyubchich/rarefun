@@ -26,7 +26,7 @@
 #'     \item \code{model}: The fitted \code{isotree} isolation forest model.
 #'   }
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' set.seed(123)
 #' data <- matrix(rnorm(1000), nrow = 500)
 #' data[1:5, ] <- data[1:5, ] + 10  # Add some outliers

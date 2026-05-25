@@ -1,4 +1,4 @@
-#' Annapolis daily Daymet time series (1980-2024)
+#' Annapolis Daily Daymet Time Series (1980-2024)
 #'
 #' Daily maximum temperature and precipitation for a single Daymet pixel near
 #' Annapolis, Maryland (USA). These data were retrieved via the package \code{daymetr} version 1.7.1

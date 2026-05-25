@@ -42,35 +42,33 @@
 #' \insertAllCited{}
 #'
 #' @examples
-#' \dontrun{
-#'   # Example with Annapolis data
-#'   data(Annapolis)
-#'   summary(Annapolis)
+#' # Example with Annapolis data
+#' data(Annapolis)
+#' summary(Annapolis)
 #'
-#'   # Detect heatwaves
-#'   hw <- rare_heatwaves(Annapolis, date_col = "date", value_col = "tmax",
-#'                        cold_spells = FALSE,
-#'                        pctile = 90, min_duration = 5)
+#' # Detect heatwaves
+#' hw <- rare_heatwaves(Annapolis, date_col = "date", value_col = "tmax",
+#'                      cold_spells = FALSE,
+#'                      pctile = 90, min_duration = 5)
 #'
-#'   # Detected events
-#'   head(hw$events)
-#'   tail(hw$events)
+#' # Detected events
+#' head(hw$events)
+#' tail(hw$events)
 #'
-#'   # Flagged days in the full series
-#'   table(hw$data$event)
+#' # Flagged days in the full series
+#' table(hw$data$event)
 #'
-#'   # Detect cold spells
-#'   cs <- rare_heatwaves(Annapolis, date_col = "date", value_col = "tmax",
-#'                     cold_spells = TRUE,
-#'                     pctile = 10, min_duration = 5)
+#' # Detect cold spells
+#' cs <- rare_heatwaves(Annapolis, date_col = "date", value_col = "tmax",
+#'                      cold_spells = TRUE,
+#'                      pctile = 10, min_duration = 5)
 #'
-#'   # Detected events
-#'   head(cs$events)
-#'   tail(cs$events)
+#' # Detected events
+#' head(cs$events)
+#' tail(cs$events)
 #'
-#'   # Flagged days in the full series
-#'   table(cs$data$event)
-#' }
+#' # Flagged days in the full series
+#' table(cs$data$event)
 #'
 #' @export
 rare_heatwaves <- function(data,
