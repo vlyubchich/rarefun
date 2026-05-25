@@ -36,22 +36,24 @@ A list containing:
 }
 \description{
 This function applies the DBSCAN (Density-Based Spatial Clustering of Applications
-with Noise) algorithm to identify rare events (anomalies) in a dataset using the
-\code{dbscan} package. Points assigned to the noise cluster (label 0) are considered
-rare events. The function computes cluster assignments and returns anomaly labels
-and scores based on the DBSCAN model.
+with Noise) algorithm of \insertCite{Ester_etal_1996;textual}{rarefun} to identify
+rare events (anomalies) in a dataset using the \code{dbscan} package. Points
+assigned to the noise cluster (label 0) are considered rare events. The function
+computes cluster assignments and returns anomaly labels and scores based on the
+DBSCAN model.
 }
 \details{
 DBSCAN identifies clusters based on density, labeling points that do not belong to
 any dense cluster as noise (cluster 0), which are treated as rare events. If \code{eps}
-is not specified, it is estimated using the Kneedle algorithm on the sorted k-nearest
-neighbor distances (where k = \code{minPts - 1}). If \code{minPts} is not specified, it is
+is not specified, it is estimated using the Kneedle algorithm of
+\insertCite{Satopaa_etal_2011;textual}{rarefun} on the sorted k-nearest neighbor
+distances (where k = \code{minPts - 1}). If \code{minPts} is not specified, it is
 computed as max(2 * ncol(x), 3). Scaling is recommended to ensure features contribute
 equally to distance calculations. The \code{scores} are approximate, based on inverse
 k-nearest neighbor distances, and should be interpreted cautiously.
 }
 \examples{
-\dontrun{
+\donttest{
 set.seed(123)
 data <- matrix(rnorm(1000), nrow = 500)
 data[1:5, ] <- data[1:5, ] + 10  # Add some outliers
@@ -65,6 +67,9 @@ table(result$is_anomaly)
 result <- rare_dbscan(swiss)
 table(result$is_anomaly)
 }
+}
+\references{
+\insertAllCited{}
 }
 \seealso{
 \code{\link{rare_iforest}}, \code{\link{rare_residuals}}, \code{\link{kneedle}}

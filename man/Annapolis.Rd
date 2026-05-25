@@ -3,7 +3,7 @@
 \docType{data}
 \name{Annapolis}
 \alias{Annapolis}
-\title{Annapolis daily Daymet time series (1980-2024)}
+\title{Annapolis Daily Daymet Time Series (1980-2024)}
 \format{
 A tibble (data frame) with the following columns:
 \itemize{

@@ -43,9 +43,12 @@ Suggests:
     testthat (>= 3.0.0),
     dplyr,
     ggplot2,
+    heatwaveR,
     patchwork,
     quantmod,
-    heatwaveR
+    quantreg,
+    ranger,
+    viridis
 RoxygenNote: 7.3.3
 URL: https://github.com/vlyubchich/rarefun
 BugReports: https://github.com/vlyubchich/rarefun/issues

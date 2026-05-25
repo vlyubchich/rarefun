@@ -59,7 +59,6 @@ The function handles empty inputs by returning an empty data frame with appropri
 column names.
 }
 \examples{
-\dontrun{
 # Example datasets
 Aa <- data.frame(
   id = c("fish1", "fish2", "fish3"),
@@ -80,7 +79,6 @@ match_spatial_points(Aa, Bb, fast = FALSE)
 
 # Apply maximum distance threshold
 match_spatial_points(Aa, Bb, max_dist = 2000)
-}
 
 }
 \seealso{

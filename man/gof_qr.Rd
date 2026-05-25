@@ -44,7 +44,7 @@ error weighted by the quantile. Both measures are computed using the check funct
 target quantile \eqn{v}.
 }
 \examples{
-\dontrun{
+\donttest{
 # Example: Quantile regression goodness-of-fit on swiss data
 # Select 30\% of data for testing
 n <- nrow(swiss)

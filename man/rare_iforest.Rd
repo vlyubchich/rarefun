@@ -52,12 +52,12 @@ A list containing:
   }
 }
 \description{
-This function applies an isolation forest algorithm to detect rare events (anomalies)
+This function applies an isolation forest algorithm \insertCite{Liu_etal_2008}{rarefun}
 in a dataset using the \code{isotree} package. It fits a model, computes anomaly scores,
 and classifies observations based on a specified threshold.
 }
 \examples{
-\dontrun{
+\donttest{
 set.seed(123)
 data <- matrix(rnorm(1000), nrow = 500)
 data[1:5, ] <- data[1:5, ] + 10  # Add some outliers
@@ -71,6 +71,9 @@ table(result$is_anomaly)
 result <- rare_iforest(swiss, threshold = 0.5)
 table(result$is_anomaly)
 }
+}
+\references{
+\insertAllCited{}
 }
 \seealso{
 \code{\link{rare_dbscan}}, \code{\link{rare_residuals}}

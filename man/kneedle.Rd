@@ -30,27 +30,28 @@ A numeric vector of length 2 containing the x and y coordinates of the
 }
 \description{
 This function implements the Kneedle algorithm to detect the "knee" or "elbow"
-point in a curve, as described in Satopaa et al. (2011). The knee point is the
-point of maximum curvature, often used to identify a transition in data behavior
-(e.g., optimal clustering parameters). The algorithm normalizes the input data,
-computes the difference between the curve and a reference line, and identifies
-the knee based on peaks in the difference curve, adjusted by a sensitivity parameter.
+point in a curve, as described by \insertCite{Satopaa_etal_2011;textual}{rarefun}.
+The knee point is the point of maximum curvature, often used to identify a
+transition in data behavior (e.g., optimal clustering parameters). The algorithm
+normalizes the input data, computes the difference between the curve and a
+reference line, and identifies the knee based on peaks in the difference curve,
+adjusted by a sensitivity parameter.
 }
 \details{
-The code is adapted from \url{https://github.com/etam4260/kneedle} licensed under the MIT license (2022).
+The code is adapted from \url{https://github.com/etam4260/kneedle/blob/main/R/kneedle.R}
+(copyright 2022 kneedle authors), licensed under the MIT license.
 
 
-The Kneedle algorithm, described in Satopaa et al. (2011), detects the knee point
-by normalizing the input data to [0, 1], computing the difference between the
-normalized curve and a reference line (x = y or x = 1 - y, depending on
-direction and concavity), and identifying peaks in the difference curve. The first
-peak exceeding a threshold (adjusted by \code{sensitivity}) is selected as the knee.
-The function automatically estimates \code{decreasing} and \code{concave} if not specified,
-using the slope from the first to last point and the average second derivative,
-respectively.
+The Kneedle algorithm detects the knee point by normalizing the input data to
+[0, 1], computing the difference between the normalized curve and a reference
+line (x = y or x = 1 - y, depending on direction and concavity), and identifying
+peaks in the difference curve. The first peak exceeding a threshold (adjusted by
+\code{sensitivity}) is selected as the knee. The function automatically estimates
+\code{decreasing} and \code{concave} if not specified, using the slope from the
+first to last point and the average second derivative, respectively.
 }
 \examples{
-\dontrun{
+\donttest{
 # Example with synthetic data
 x <- 1:10
 y <- c(1, 2, 3, 4, 10, 20, 30, 40, 50, 60)
@@ -60,8 +61,5 @@ points(knee[1], knee[2], col = "red", pch = 19)
 }
 }
 \references{
-Satopaa, V., Albrecht, J., Irwin, D., & Raghavan, B. (2011). Finding a "Kneedle"
-in a Haystack: Detecting Knee Points in System Behavior. *31st International
-Conference on Distributed Computing Systems Workshops*, 166-171.
-\doi{10.1109/ICDCSW.2011.20}
+\insertAllCited{}
 }
