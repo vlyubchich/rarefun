@@ -1,6 +1,6 @@
 #' Detect Rare Events Using Isolation Forest
 #'
-#' This function applies an isolation forest algorithm to detect rare events (anomalies)
+#' This function applies an isolation forest algorithm \insertCite{Liu_etal_2008}{rarefun}
 #' in a dataset using the \code{isotree} package. It fits a model, computes anomaly scores,
 #' and classifies observations based on a specified threshold.
 #'
@@ -40,6 +40,9 @@
 #' result <- rare_iforest(swiss, threshold = 0.5)
 #' table(result$is_anomaly)
 #' }
+#' @references
+#' \insertAllCited{}
+#'
 #' @seealso \code{\link{rare_dbscan}}, \code{\link{rare_residuals}}
 #' @importFrom isotree isolation.forest predict.isolation_forest
 #' @export

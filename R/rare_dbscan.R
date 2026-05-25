@@ -1,10 +1,11 @@
 #' Detect Rare Events Using DBSCAN
 #'
 #' This function applies the DBSCAN (Density-Based Spatial Clustering of Applications
-#' with Noise) algorithm to identify rare events (anomalies) in a dataset using the
-#' \code{dbscan} package. Points assigned to the noise cluster (label 0) are considered
-#' rare events. The function computes cluster assignments and returns anomaly labels
-#' and scores based on the DBSCAN model.
+#' with Noise) algorithm of \insertCite{Ester_etal_1996;textual}{rarefun} to identify
+#' rare events (anomalies) in a dataset using the \code{dbscan} package. Points
+#' assigned to the noise cluster (label 0) are considered rare events. The function
+#' computes cluster assignments and returns anomaly labels and scores based on the
+#' DBSCAN model.
 #'
 #' @param x A numeric matrix or data frame with no missing values. Rows are
 #'   observations, and columns are features.
@@ -29,8 +30,9 @@
 #' @details
 #' DBSCAN identifies clusters based on density, labeling points that do not belong to
 #' any dense cluster as noise (cluster 0), which are treated as rare events. If \code{eps}
-#' is not specified, it is estimated using the Kneedle algorithm on the sorted k-nearest
-#' neighbor distances (where k = \code{minPts - 1}). If \code{minPts} is not specified, it is
+#' is not specified, it is estimated using the Kneedle algorithm of
+#' \insertCite{Satopaa_etal_2011;textual}{rarefun} on the sorted k-nearest neighbor
+#' distances (where k = \code{minPts - 1}). If \code{minPts} is not specified, it is
 #' computed as max(2 * ncol(x), 3). Scaling is recommended to ensure features contribute
 #' equally to distance calculations. The \code{scores} are approximate, based on inverse
 #' k-nearest neighbor distances, and should be interpreted cautiously.
@@ -50,6 +52,9 @@
 #' result <- rare_dbscan(swiss)
 #' table(result$is_anomaly)
 #' }
+#' @references
+#' \insertAllCited{}
+#'
 #' @seealso \code{\link{rare_iforest}}, \code{\link{rare_residuals}}, \code{\link{kneedle}}
 #' @importFrom dbscan dbscan kNNdist
 #' @export
@@ -99,7 +104,7 @@ rare_dbscan <- function(x,
 
     # Estimate eps if not provided
     if (is.null(eps)) {
-        knee <- kneedle(1:length(knn_dist), sort(knn_dist))
+        knee <- kneedle(seq_along(knn_dist), sort(knn_dist))
         eps <- knee[2]
     }
 
