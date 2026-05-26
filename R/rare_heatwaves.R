@@ -42,6 +42,7 @@
 #' \insertAllCited{}
 #'
 #' @examples
+#' \donttest{
 #' # Example with Annapolis data
 #' data(Annapolis)
 #' summary(Annapolis)
@@ -69,7 +70,7 @@
 #'
 #' # Flagged days in the full series
 #' table(cs$data$event)
-#'
+#' }
 #' @export
 rare_heatwaves <- function(data,
                            date_col = "date",

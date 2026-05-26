@@ -13,8 +13,7 @@ Authors@R: c(
     )
 Description: Functions for detecting and analyzing rare events in data.
     Implements isolation forest (Liu et al., 2008, <doi:10.1109/ICDM.2008.17>)
-    and DBSCAN (Density-Based Spatial Clustering of Applications with Noise;
-    Ester et al., 1996, <doi:10.5555/3001460.3001507>)
+    and clustering
     for anomaly detection in time series residuals. Decomposes time series
     using LOESS (Locally Estimated Scatterplot Smoothing) or STL 
     (Seasonal-Trend decomposition using LOESS). Detects marine heatwaves 
@@ -49,8 +48,8 @@ Suggests:
     quantreg,
     ranger,
     viridis
-RoxygenNote: 7.3.3
 URL: https://github.com/vlyubchich/rarefun
 BugReports: https://github.com/vlyubchich/rarefun/issues
 RdMacros: Rdpack
 LazyData: true
+Config/roxygen2/version: 8.0.0

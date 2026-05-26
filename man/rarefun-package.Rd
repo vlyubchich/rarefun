@@ -6,7 +6,7 @@
 \alias{rarefun-package}
 \title{rarefun: Functions for Rare Events Analysis}
 \description{
-Functions for detecting and analyzing rare events in data. Implements isolation forest (Liu et al., 2008, \doi{10.1109/ICDM.2008.17}) and DBSCAN (Density-Based Spatial Clustering of Applications with Noise; Ester et al., 1996, \doi{10.5555/3001460.3001507}) for anomaly detection in time series residuals. Decomposes time series using LOESS (Locally Estimated Scatterplot Smoothing) or STL (Seasonal-Trend decomposition using LOESS). Detects marine heatwaves and cold spells following Hobday et al. (2016) \doi{10.1016/j.pocean.2015.12.014}. Provides goodness-of-fit tests for quantile regression (Haupt et al., 2011, \doi{10.1080/02664763.2011.573542}), partial dependence with quantile random forests, MCC (Matthews Correlation Coefficient) computation and testing, knee-point detection via the Kneedle algorithm (Satopaa et al., 2011, \doi{10.1109/ICDCSW.2011.20}), and spatial point matching.
+Functions for detecting and analyzing rare events in data. Implements isolation forest (Liu et al., 2008, \doi{10.1109/ICDM.2008.17}) and clustering for anomaly detection in time series residuals. Decomposes time series using LOESS (Locally Estimated Scatterplot Smoothing) or STL (Seasonal-Trend decomposition using LOESS). Detects marine heatwaves and cold spells following Hobday et al. (2016) \doi{10.1016/j.pocean.2015.12.014}. Provides goodness-of-fit tests for quantile regression (Haupt et al., 2011, \doi{10.1080/02664763.2011.573542}), partial dependence with quantile random forests, MCC (Matthews Correlation Coefficient) computation and testing, knee-point detection via the Kneedle algorithm (Satopaa et al., 2011, \doi{10.1109/ICDCSW.2011.20}), and spatial point matching.
 }
 \seealso{
 Useful links:
@@ -21,6 +21,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Vyacheslav Lyubchich \email{lyubchich@umces.edu} (\href{https://orcid.org/0000-0001-7936-4285}{ORCID})
   \item Geneviève Nesslage (\href{https://orcid.org/0000-0003-1770-6803}{ORCID})
 }
 

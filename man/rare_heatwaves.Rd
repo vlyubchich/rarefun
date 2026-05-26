@@ -64,6 +64,7 @@ data are not daily, aggregate or resample to daily before calling this
 function to ensure meaningful climatologies and durations in days.
 }
 \examples{
+\donttest{
 # Example with Annapolis data
 data(Annapolis)
 summary(Annapolis)
@@ -91,7 +92,7 @@ tail(cs$events)
 
 # Flagged days in the full series
 table(cs$data$event)
-
+}
 }
 \references{
 \insertAllCited{}
