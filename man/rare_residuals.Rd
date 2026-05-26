@@ -113,14 +113,52 @@ automatically treat the series as seasonal (i.e., set \code{seasonal = TRUE}). W
 }
 \examples{
 \donttest{
-# Annapolis data example (seasonal, Date index)
+# Annapolis temperature (seasonal, Date index)
 data(Annapolis)
 x <- data.frame(time = Annapolis$date, value = Annapolis$tmax)
-result <- rare_residuals(x, seasonal = TRUE, period = 365.25, method = "all",
-iforest_args = list(ntrees = 100))
-plot(result$data$time, result$data$value, type = "l", main = "Time Series")
-points(result$data$time[result$data$is_anomaly_iforest],
-       result$data$value[result$data$is_anomaly_iforest], col = "red", pch = 19)
+result_tmax <- rare_residuals(x,
+                         seasonal = TRUE, period = 365.25,
+                         method = "iforest",
+                         iforest_args = list(ntrees = 100))
+plot(result_tmax$data$time, result_tmax$data$value, type = "l", las = 1,
+     xlab = "Date", ylab = "Temperature (°C)",
+     main = "Anomalies in Annapolis daily maximum temperature",
+)
+anomaly_sign <- sign(result_tmax$data$residual[result_tmax$data$is_anomaly_iforest])
+points(result_tmax$data$time[result_tmax$data$is_anomaly_iforest],
+       result_tmax$data$value[result_tmax$data$is_anomaly_iforest],
+       col = c("blue", NA, "red")[anomaly_sign + 2],
+       pch = 19)
+
+# Annapolis annual fish catch example (hypothetical data)
+years <- 1990:2024
+# Annual fish catch (tonnes)
+fish_catch <- c(505, 493, 498, 487, 450, 479, 488, 472, 465, 476,
+                458, 466, 453, 461, 500, 447, 441, 435, 428, 443,
+                425, 418, 432, 421, 345, 412, 407, 418, 405, 397,
+                411, 403, 395, 408, 391)
+result_fish <- rare_residuals(data.frame(time = years, value = fish_catch),
+                              method = "iforest",
+                              iforest_args = list(ntrees = 100))
+
+# Aggregate Annapolis daily data to identify rare warm spring years
+# and test association with rare fish-catch years
+spring_months <- c(3, 4, 5)
+rare_tmax_spring <- result_tmax$data |>
+    dplyr::mutate(Year = format(time, "\%Y"),
+                  Month = as.numeric(format(time, "\%m"))) |>
+    dplyr::filter(Month \%in\% spring_months, Year \%in\% years) |>
+    dplyr::group_by(Year) |>
+    dplyr::summarise(rare_tmax_spring = any(is_anomaly_iforest & residual > 0)) |>
+    dplyr::arrange(Year) |>
+    dplyr::pull(rare_tmax_spring)
+
+# Test association between rare fish-catch years and rare warm years
+mcc_result <- mcc(result_fish$data$is_anomaly_iforest,
+                  rare_tmax_spring,
+                  ts = TRUE, bootstrap_reps = 999)
+mcc_result$mcc
+mcc_result$mcc_bootstrap_pv
 
 # Classic data example (ts input)
 result_AirPassengers <- rare_residuals(AirPassengers,
@@ -143,5 +181,5 @@ if (requireNamespace("ggplot2", quietly = TRUE)) {
 }
 }
 \seealso{
-\code{\link{rare_iforest}}, \code{\link{rare_dbscan}}, \code{\link[stats]{stl}}
+\code{\link{rare_iforest}}, \code{\link{rare_dbscan}},  \code{\link{mcc}}, \code{\link[stats]{stl}}
 }
