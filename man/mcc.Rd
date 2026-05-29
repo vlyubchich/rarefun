@@ -132,7 +132,6 @@ for (i in 2:n) {
 }
 
 # Check autocorrelation at lag 1
-par(mfrow = c(1, 2))
 mcc(ts_x, dplyr::lag(ts_x), ts = TRUE, l = 7)$mcc
 acf(ts_x, main = "ACF of X Time Series, treated as numeric")
 mcc(ts_y, dplyr::lag(ts_y), ts = TRUE, l = 7)$mcc
